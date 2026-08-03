@@ -1,0 +1,4772 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FundedNext · Settlement Portal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0d0f14;
+        --surface: #13161e;
+        --surface2: #1a1e28;
+        --surface3: #1f2535;
+        --border: #252a38;
+        --border2: #2e354a;
+        --text: #e8eaf0;
+        --text2: #9aa0b4;
+        --text3: #5c6480;
+        --accent: #7b2fbe;
+        --accent2: #9b4fe0;
+        --accent3: #3d1a70;
+        --green: #22c55e;
+        --red: #ef4444;
+        --yellow: #f59e0b;
+        --blue: #3b82f6;
+        --teal: #14b8a6;
+        --orange: #f97316;
+        --pink: #ec4899;
+        --fee-color: #64748b;
+        --r: 10px;
+        --rs: 6px;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+      }
+
+      /* SHELL */
+      .shell {
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: 224px;
+        flex-shrink: 0;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .logo {
+        padding: 20px 18px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .logo-brand {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+      }
+      .logo-sub {
+        font-size: 10px;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-top: 2px;
+      }
+      .sb-section {
+        padding: 14px 14px 4px;
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--text3);
+        font-weight: 600;
+      }
+      .psp-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px 8px 16px;
+      }
+      .psp-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 10px;
+        border-radius: var(--rs);
+        cursor: pointer;
+        transition: background 0.15s;
+        color: var(--text2);
+        font-size: 12.5px;
+        font-weight: 500;
+        margin-bottom: 2px;
+        border: 1px solid transparent;
+        position: relative;
+      }
+      .psp-item:hover {
+        background: var(--surface2);
+        color: var(--text);
+      }
+      .psp-item.active {
+        background: var(--accent3);
+        color: var(--text);
+        border-color: var(--accent);
+      }
+      .psp-icon {
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+      .psp-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--border2);
+        flex-shrink: 0;
+        margin-left: auto;
+        transition: all 0.2s;
+      }
+      .psp-item.done .psp-dot {
+        background: var(--green);
+        box-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+      }
+      .psp-item.active .psp-dot {
+        background: var(--accent2);
+        box-shadow: 0 0 6px var(--accent2);
+      }
+      .sb-footer {
+        padding: 12px 14px;
+        border-top: 1px solid var(--border);
+        font-size: 11px;
+        color: var(--text3);
+      }
+
+      /* Overview button at bottom of sidebar */
+      .sb-overview {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 18px;
+        margin: 0 8px 8px;
+        border-radius: var(--rs);
+        cursor: pointer;
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        color: var(--text2);
+        font-size: 12.5px;
+        font-weight: 600;
+        transition: all 0.15s;
+      }
+      .sb-overview:hover {
+        background: var(--accent3);
+        color: var(--text);
+        border-color: var(--accent);
+      }
+      .sb-overview.active {
+        background: var(--accent3);
+        color: var(--text);
+        border-color: var(--accent);
+      }
+      .sb-ov-label {
+        flex: 1;
+      }
+
+      /* Tool links in sidebar */
+      .sb-tools {
+        padding: 2px 8px 8px;
+      }
+      .sb-tool-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border-radius: var(--rs);
+        text-decoration: none;
+        color: var(--text3);
+        font-size: 11.5px;
+        font-weight: 500;
+        transition: all 0.15s;
+        margin-bottom: 2px;
+        border: 1px solid transparent;
+      }
+      .sb-tool-link:hover {
+        background: var(--surface2);
+        color: var(--text2);
+        border-color: var(--border);
+      }
+      .sb-tool-icon {
+        font-size: 13px;
+        flex-shrink: 0;
+      }
+      .sb-tool-label {
+        flex: 1;
+      }
+      .sb-tool-arrow {
+        font-size: 10px;
+        color: var(--text3);
+        opacity: 0.6;
+      }
+
+      /* MAIN */
+      .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .topbar {
+        padding: 0 28px;
+        height: 54px;
+        flex-shrink: 0;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .tb-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .tb-title {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+      }
+      .tb-title span {
+        color: var(--text3);
+        font-weight: 400;
+        font-size: 12px;
+        margin-left: 8px;
+        font-family: "Inter", sans-serif;
+      }
+      .tb-right {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      /* TABS (top nav for Summary vs PSP) */
+      .main-tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        padding: 0 28px;
+        flex-shrink: 0;
+      }
+      .main-tab {
+        padding: 12px 18px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text3);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        background: none;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+      }
+      .main-tab:hover {
+        color: var(--text2);
+      }
+      .main-tab.active {
+        color: var(--text);
+        border-bottom-color: var(--accent2);
+      }
+
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 28px;
+      }
+
+      /* BUTTONS */
+      .btn {
+        padding: 7px 16px;
+        border-radius: var(--rs);
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: inherit;
+        transition: all 0.15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: var(--accent2);
+      }
+      .btn-primary:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text2);
+        border: 1px solid var(--border2);
+      }
+      .btn-ghost:hover {
+        background: var(--surface2);
+        color: var(--text);
+      }
+      .btn-run {
+        background: rgba(123, 47, 190, 0.15);
+        color: var(--accent2);
+        border: 1px solid var(--accent3);
+        font-size: 11px;
+        padding: 4px 10px;
+      }
+      .btn-run:hover {
+        background: var(--accent3);
+      }
+
+      /* UPLOAD */
+      .upload-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .upload-zone {
+        background: var(--surface2);
+        border: 1.5px dashed var(--border2);
+        border-radius: var(--r);
+        padding: 18px 16px;
+        cursor: pointer;
+        transition: all 0.15s;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+        text-align: center;
+      }
+      .upload-zone:hover,
+      .upload-zone.drag {
+        border-color: var(--accent2);
+        background: rgba(61, 26, 112, 0.4);
+      }
+      .upload-zone.loaded {
+        border-color: var(--green);
+        border-style: solid;
+        background: rgba(34, 197, 94, 0.04);
+      }
+      .upload-zone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+      }
+      .uz-icon {
+        font-size: 22px;
+      }
+      .uz-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .uz-hint {
+        font-size: 10px;
+        color: var(--text3);
+        line-height: 1.4;
+      }
+      .uz-name {
+        font-size: 10px;
+        color: var(--green);
+        font-weight: 600;
+      }
+      .badge {
+        font-size: 9px;
+        padding: 2px 7px;
+        border-radius: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .badge-req {
+        background: rgba(123, 47, 190, 0.2);
+        color: var(--accent2);
+      }
+      .badge-opt {
+        background: rgba(92, 100, 128, 0.15);
+        color: var(--text3);
+      }
+
+      /* ── SUMMARY KPI SECTION ── */
+      .summary-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .summary-title {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+      }
+      .cur-toggle {
+        display: flex;
+        gap: 3px;
+        background: var(--surface2);
+        padding: 3px;
+        border-radius: var(--rs);
+        border: 1px solid var(--border);
+      }
+      .cur-btn {
+        padding: 5px 12px;
+        border-radius: 4px;
+        border: none;
+        background: none;
+        color: var(--text3);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s;
+      }
+      .cur-btn.active {
+        background: var(--surface3);
+        color: var(--text);
+      }
+
+      .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      @media (max-width: 900px) {
+        .kpi-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 560px) {
+        .kpi-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .kpi-card {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        padding: 18px 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .kpi-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+      }
+      .kpi-card.c-gross::before {
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+      }
+      .kpi-card.c-net::before {
+        background: var(--green);
+      }
+      .kpi-card.c-fees::before {
+        background: var(--fee-color);
+      }
+      .kpi-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text3);
+        font-weight: 600;
+        margin-bottom: 10px;
+      }
+      .kpi-main {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .kpi-value {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 1;
+      }
+      .kpi-value.gross {
+        color: var(--accent2);
+      }
+      .kpi-value.net {
+        color: var(--green);
+      }
+      .kpi-value.fees {
+        color: var(--fee-color);
+      }
+      .kpi-trend {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 10px;
+      }
+      .trend-up {
+        background: rgba(34, 197, 94, 0.12);
+        color: var(--green);
+      }
+      .trend-dn {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--red);
+      }
+      .trend-flat {
+        background: rgba(92, 100, 128, 0.15);
+        color: var(--text3);
+      }
+      .kpi-sub {
+        font-size: 11px;
+        color: var(--text3);
+        margin-top: 8px;
+      }
+      .kpi-sub strong {
+        color: var(--text2);
+      }
+      /* multi-currency rows */
+      .cur-rows {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .cur-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 12px;
+      }
+      .cur-row:last-child {
+        border-bottom: none;
+      }
+      .cur-tag {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        min-width: 34px;
+      }
+      /* tooltip */
+      .has-tooltip {
+        position: relative;
+        cursor: help;
+      }
+      .tooltip {
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--surface3);
+        border: 1px solid var(--border2);
+        border-radius: var(--rs);
+        padding: 10px 14px;
+        font-size: 11px;
+        white-space: nowrap;
+        z-index: 99;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.15s;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      }
+      .has-tooltip:hover .tooltip {
+        opacity: 1;
+      }
+      .tooltip-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 2px 0;
+      }
+
+      /* CHARTS SECTION */
+      .charts-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      @media (max-width: 800px) {
+        .charts-row {
+          grid-template-columns: 1fr;
+        }
+      }
+      .chart-card {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        padding: 18px 20px;
+      }
+      .chart-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text3);
+        margin-bottom: 14px;
+      }
+      .chart-wrap {
+        position: relative;
+        height: 180px;
+      }
+
+      /* PSP TABLE */
+      .table-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .table-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text3);
+      }
+      .table-wrap {
+        overflow-x: auto;
+        border-radius: var(--r);
+        border: 1px solid var(--border);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      thead th {
+        background: var(--surface2);
+        padding: 10px 14px;
+        text-align: left;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text3);
+        font-weight: 700;
+        white-space: nowrap;
+        border-bottom: 1px solid var(--border);
+      }
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+        transition: background 0.1s;
+      }
+      tbody tr:last-child {
+        border-bottom: none;
+      }
+      tbody tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      tbody td {
+        padding: 11px 14px;
+        vertical-align: middle;
+      }
+      tbody tr.muted td {
+        color: var(--text3);
+      }
+      tbody tr.muted {
+        background: rgba(0, 0, 0, 0.15);
+      }
+      th.r,
+      td.r {
+        text-align: right;
+      }
+
+      /* Data bar behind gross cell */
+      .data-bar-cell {
+        position: relative;
+        z-index: 0;
+      }
+      .data-bar-bg {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        background: rgba(155, 79, 224, 0.08);
+        border-radius: 0 3px 3px 0;
+        z-index: -1;
+        transition: width 0.4s ease;
+      }
+
+      /* Gap cell */
+      .gap-val {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 1px;
+      }
+      .gap-pct {
+        font-size: 10px;
+        color: var(--text3);
+      }
+
+      /* Status badge */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+      .status-ok {
+        background: rgba(34, 197, 94, 0.14);
+        color: #4ade80;
+        border: 1px solid rgba(34, 197, 94, 0.2);
+      }
+      .status-warn {
+        background: rgba(245, 158, 11, 0.14);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.2);
+      }
+      .status-bad {
+        background: rgba(239, 68, 68, 0.12);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.18);
+      }
+      .status-none {
+        background: rgba(92, 100, 128, 0.12);
+        color: var(--text3);
+        border: 1px solid var(--border);
+      }
+
+      /* Individual PSP results */
+      .psp-kpi-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      @media (max-width: 900px) {
+        .psp-kpi-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      .pkpi {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        padding: 14px 16px;
+      }
+      .pkpi-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text3);
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .pkpi-value {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 19px;
+        font-weight: 700;
+      }
+      .pkpi-sub {
+        font-size: 10px;
+        color: var(--text3);
+        margin-top: 4px;
+      }
+
+      /* Tabs */
+      .tab-bar {
+        display: flex;
+        gap: 2px;
+        margin-bottom: 16px;
+        background: var(--surface2);
+        padding: 3px;
+        border-radius: var(--rs);
+        width: fit-content;
+      }
+      .tab-btn {
+        padding: 6px 14px;
+        border-radius: 4px;
+        border: none;
+        background: none;
+        color: var(--text3);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s;
+      }
+      .tab-btn.active {
+        background: var(--surface3);
+        color: var(--text);
+      }
+      .tab-pane {
+        display: none;
+      }
+      .tab-pane.visible {
+        display: block;
+      }
+
+      .section-hd {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text3);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .section-hd::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      /* fee bars */
+      .fee-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .fee-item-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+        font-size: 12px;
+      }
+      .fee-item-name {
+        color: var(--text2);
+        font-weight: 500;
+      }
+      .fee-item-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .fee-item-val {
+        font-weight: 700;
+      }
+      .fee-item-pct {
+        color: var(--text3);
+        font-size: 11px;
+      }
+      .fee-bar-bg {
+        background: var(--border);
+        border-radius: 3px;
+        height: 5px;
+      }
+      .fee-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        transition: width 0.5s;
+      }
+
+      /* empty pane */
+      .empty-pane {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 40px;
+        color: var(--text3);
+        gap: 12px;
+        text-align: center;
+      }
+      .empty-icon {
+        font-size: 40px;
+        opacity: 0.35;
+      }
+      .empty-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text2);
+      }
+
+      /* toast */
+      #toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: var(--surface3);
+        border: 1px solid var(--border2);
+        border-radius: var(--r);
+        padding: 11px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        z-index: 9999;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+        max-width: 280px;
+      }
+      #toast.show {
+        opacity: 1;
+      }
+
+      ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border2);
+        border-radius: 3px;
+      }
+
+      /* --- COUNTRY-WISE REVENUE BREAKDOWN --- */
+      .crb-panel {
+        margin-top: 24px;
+      }
+      .crb-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .crb-toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .crb-search-wrap {
+        position: relative;
+        min-width: 220px;
+      }
+      .crb-search-input {
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: var(--rs);
+        padding: 8px 12px;
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        outline: none;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .crb-search-input:focus {
+        border-color: var(--accent);
+      }
+      .crb-search-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        z-index: 40;
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: 8px;
+        max-height: 240px;
+        overflow-y: auto;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        display: none;
+      }
+      .crb-search-dropdown.open {
+        display: block;
+      }
+      .crb-search-item {
+        padding: 8px 12px;
+        font-size: 12px;
+        color: var(--text2);
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .crb-search-item:hover {
+        background: var(--surface3);
+        color: var(--text);
+      }
+      .crb-search-item .crb-si-rank {
+        color: var(--text3);
+        font-size: 10px;
+      }
+      .crb-cur-select {
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: var(--rs);
+        padding: 8px 10px;
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        outline: none;
+        cursor: pointer;
+      }
+      .crb-clear-btn {
+        font-size: 11px;
+        color: var(--accent2);
+        cursor: pointer;
+        padding: 6px 10px;
+        border: 1px solid var(--border2);
+        border-radius: 6px;
+        background: var(--surface2);
+      }
+      .crb-clear-btn:hover {
+        border-color: var(--accent);
+      }
+      .crb-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        min-width: 900px;
+        font-family:
+          "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+      }
+      .crb-table thead tr {
+        border-bottom: 1px solid var(--border2);
+      }
+      .crb-table th {
+        padding: 10px 16px;
+        text-align: left;
+        font-family:
+          "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text2);
+        white-space: nowrap;
+        cursor: pointer;
+        user-select: none;
+      }
+      .crb-table th.sortable:hover {
+        color: var(--accent2);
+      }
+      .crb-table th .crb-sort-arrow {
+        margin-left: 4px;
+        opacity: 0.6;
+        font-size: 9px;
+      }
+      .crb-table td {
+        padding: 6px 16px;
+        vertical-align: middle;
+        white-space: nowrap;
+        border: none;
+      }
+      .crb-table tr.crb-spacer-row td {
+        padding: 6px 0;
+        line-height: 4px;
+      }
+      .crb-table tr.crb-country-row td {
+        font-weight: 700;
+        color: var(--text);
+        padding-top: 12px;
+      }
+      .crb-table tr.crb-country-row.crb-selected td {
+        color: var(--accent2);
+      }
+      .crb-table tr.crb-psp-row td {
+        color: var(--text2);
+        font-weight: 400;
+      }
+      .crb-tree-glyph {
+        display: inline-block;
+        width: 20px;
+        color: var(--text3);
+      }
+      .crb-fee-high {
+        color: var(--red) !important;
+      }
+      .crb-fee-mid {
+        color: var(--yellow) !important;
+      }
+      .crb-fee-low {
+        color: var(--text2) !important;
+      }
+      .crb-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 12px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .crb-count-label {
+        font-size: 11px;
+        color: var(--text3);
+      }
+      .crb-loadmore-btn {
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: var(--rs);
+        padding: 9px 16px;
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .crb-loadmore-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent2);
+      }
+      .crb-empty {
+        text-align: center;
+        padding: 30px;
+        color: var(--text3);
+        font-style: italic;
+        font-size: 12px;
+      }
+
+      /* ── BINANCE PAY MULTI-FILE UPLOAD ── */
+      .bp-file-list {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+      }
+      .bp-file-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 8px;
+        background: rgba(34, 197, 94, 0.06);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        border-radius: var(--rs);
+      }
+      .bp-file-chip-name {
+        flex: 1;
+        color: var(--green);
+        font-size: 11px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .bp-file-chip-rm {
+        background: none;
+        border: none;
+        color: var(--text3);
+        cursor: pointer;
+        font-size: 12px;
+        padding: 0 2px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+      .bp-file-chip-rm:hover { color: var(--red); }
+      .bp-add-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 8px;
+        padding: 5px 12px;
+        background: var(--surface3);
+        border: 1px solid var(--border2);
+        border-radius: var(--rs);
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text2);
+        position: relative;
+        transition: all 0.15s;
+        z-index: 2;
+      }
+      .bp-add-btn:hover { background: var(--surface2); border-color: var(--accent); color: var(--text); }
+      .bp-add-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+      /* Binance Pay paste zone */
+      .bp-paste-zone {
+        background: var(--surface2);
+        border: 1.5px dashed var(--border2);
+        border-radius: var(--r);
+        padding: 14px 16px;
+        margin-bottom: 16px;
+        transition: all 0.15s;
+      }
+      .bp-paste-zone.drag { border-color: var(--accent2); background: rgba(61,26,112,.4); }
+      .bp-paste-input {
+        display: inline-block;
+        background: var(--surface3);
+        border: 1px dashed var(--border2);
+        border-radius: var(--rs);
+        padding: 7px 12px;
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        color: var(--text3);
+        cursor: text;
+        min-width: 200px;
+        outline: none;
+      }
+      .bp-paste-input:focus { border-color: var(--accent); color: var(--text); }
+      .bp-shots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+      .bp-shots:empty { display: none; }
+      .bp-shot {
+        position: relative;
+        border: 1px solid var(--border2);
+        border-radius: var(--rs);
+        overflow: hidden;
+        width: 120px;
+        background: #000;
+      }
+      .bp-shot img { display: block; width: 100%; height: 72px; object-fit: cover; cursor: zoom-in; }
+      .bp-shot-cap {
+        font-size: 10px;
+        color: var(--text3);
+        padding: 3px 5px;
+        background: var(--surface);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .bp-shot-rm {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        background: rgba(239,68,68,.9);
+        color: #fff;
+        border: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .bp-entry-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .bp-entry-input {
+        background: var(--surface3);
+        border: 1px solid var(--border2);
+        border-radius: var(--rs);
+        padding: 7px 10px;
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        color: var(--text);
+        width: 100%;
+      }
+      .bp-entry-input:focus { outline: none; border-color: var(--accent); }
+      /* Lightbox for BP screenshots */
+      .bp-lightbox {
+        position: fixed;
+        inset: 0;
+        background: rgba(13,15,20,.92);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 40px;
+      }
+      .bp-lightbox.on { display: flex; }
+      .bp-lightbox img { max-width: 100%; max-height: 100%; border-radius: var(--r); }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-brand">FundedNext</div>
+          <div class="logo-sub">Settlement Portal</div>
+        </div>
+        <div class="sb-section">PSPs</div>
+        <nav class="psp-list" id="pspList"></nav>
+
+        <!-- TOOLS -->
+        <div class="sb-section">Tools</div>
+        <div class="sb-tools">
+          <a
+            href="https://tasnuvahaque-bit.github.io/FundedNext-Reconciliation/Paysafe_Invoice_Parser.html"
+            target="_blank"
+            rel="noopener"
+            class="sb-tool-link"
+          >
+            <span class="sb-tool-icon">📄</span>
+            <span class="sb-tool-label">Invoice Parser</span>
+            <span class="sb-tool-arrow">↗</span>
+          </a>
+          <a
+            href="https://tasnuvahaque-bit.github.io/FundedNext-Reconciliation/NI_PA_Converter.html"
+            target="_blank"
+            rel="noopener"
+            class="sb-tool-link"
+          >
+            <span class="sb-tool-icon">🏛️</span>
+            <span class="sb-tool-label">NI PA Converter</span>
+            <span class="sb-tool-arrow">↗</span>
+          </a>
+          <a
+            href="https://tasnuvahaque-bit.github.io/FundedNext-Reconciliation/FundedNext_Report_Compiler.html"
+            target="_blank"
+            rel="noopener"
+            class="sb-tool-link"
+          >
+            <span class="sb-tool-icon">📦</span>
+            <span class="sb-tool-label">Report Compiler</span>
+            <span class="sb-tool-arrow">↗</span>
+          </a>
+        </div>
+        <div class="sb-overview" id="sbOverviewBtn" onclick="showOverview()">
+          <span>📊</span><span class="sb-ov-label">Overview</span>
+        </div>
+        <div class="sb-footer" id="sbFooter">Select a PSP to begin</div>
+      </aside>
+
+      <!-- MAIN -->
+      <div class="main">
+        <div class="topbar">
+          <div class="tb-left">
+            <div class="tb-title" id="topTitle">
+              Overview <span id="topSub">All PSPs</span>
+            </div>
+          </div>
+          <div class="tb-right">
+            <button
+              class="btn btn-ghost"
+              id="btnExport"
+              style="display: none"
+              onclick="exportCurrent()"
+            >
+              ⬇ Export
+            </button>
+            <button
+              class="btn btn-ghost"
+              id="btnClear"
+              style="display: none"
+              onclick="clearCurrent()"
+            >
+              ✕ Clear
+            </button>
+          </div>
+        </div>
+
+        <div class="main-tabs" id="mainTabs" style="display: none">
+          <button
+            class="main-tab active"
+            id="pspTabBtn"
+            onclick="showView('psp',this)"
+          >
+            PSP Detail
+          </button>
+        </div>
+
+        <div class="content" id="content">
+          <div class="empty-pane">
+            <div class="empty-icon">📊</div>
+            <div class="empty-title">Settlement Portal</div>
+            <p style="font-size: 12px; max-width: 320px; line-height: 1.6">
+              Select a PSP from the left, upload the report files, and run the
+              analysis. The Overview tab will populate as you complete each PSP.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="toast"></div>
+
+    <script>
+      // ── PSP REGISTRY ──
+      const PSPS = [
+        {
+          id: "paysafe",
+          label: "Paysafe",
+          icon: "🔵",
+          cur: "USD",
+          files: [
+            {
+              key: "invoice",
+              label: "Invoice Report",
+              hint: "Excel — Net Sales, Currency, Fees",
+              required: true,
+              accept: ".xlsx,.xls,.csv",
+            },
+            {
+              key: "tx",
+              label: "TX Report",
+              hint: "CSV — optional, for country/method",
+              required: false,
+              accept: ".csv",
+            },
+          ],
+        },
+        {
+          id: "zen",
+          label: "Zen",
+          icon: "⚡",
+          cur: "USD",
+          files: [
+            {
+              key: "settle",
+              label: "Settlement Report",
+              hint: "CSV — transaction_type, amounts, fees",
+              required: true,
+              accept: ".csv",
+            },
+            {
+              key: "auth",
+              label: "Auth Report",
+              hint: "CSV — optional, for auth rate",
+              required: false,
+              accept: ".csv",
+            },
+          ],
+        },
+        {
+          id: "trust",
+          label: "TrustPayments",
+          icon: "🔒",
+          cur: "USD",
+          files: [
+            {
+              key: "tx",
+              label: "Processed Transaction Report",
+              hint: "Excel — Transaction Amount, Status, fee cols",
+              required: true,
+              accept: ".xlsx,.csv",
+            },
+          ],
+        },
+        {
+          id: "payabl",
+          label: "Payabl",
+          icon: "💳",
+          cur: "USD",
+          files: [
+            {
+              key: "tx",
+              label: "TX Report",
+              hint: "CSV — Tx-Type, Status, Amount",
+              required: true,
+              accept: ".csv",
+            },
+            {
+              key: "break",
+              label: "TX Breakdown",
+              hint: "CSV — Gross Amount, Net Amount, fee cols, MID",
+              required: false,
+              accept: ".csv",
+            },
+          ],
+        },
+        {
+          id: "dlocal",
+          label: "dLocal",
+          icon: "🌐",
+          cur: "USD",
+          files: [
+            {
+              key: "settle",
+              label: "Settlement Report",
+              hint: "CSV or Excel",
+              required: true,
+              accept: ".csv,.xlsx",
+            },
+          ],
+        },
+        {
+          id: "unlimit",
+          label: "Unlimit",
+          icon: "♾️",
+          cur: "USD",
+          files: [
+            {
+              key: "settle",
+              label: "Settlement Report",
+              hint: "Excel — Breakdown (All) sheet",
+              required: true,
+              accept: ".xlsx",
+            },
+            {
+              key: "order",
+              label: "Order Report",
+              hint: "Excel — Payments sheet (optional)",
+              required: false,
+              accept: ".xlsx",
+            },
+          ],
+        },
+        {
+          id: "nuveiEu",
+          label: "Nuvei EU",
+          icon: "🇪🇺",
+          cur: "USD",
+          files: [
+            {
+              key: "settle",
+              label: "Settlement Report",
+              hint: "Excel — movement sheet (required)",
+              required: true,
+              accept: ".xlsx",
+            },
+            {
+              key: "tx",
+              label: "Transaction Report",
+              hint: "Excel — transaction-search sheet (optional)",
+              required: false,
+              accept: ".xlsx",
+            },
+          ],
+        },
+        {
+          id: "nuveiAe",
+          label: "Nuvei AE",
+          icon: "🇦🇪",
+          cur: "USD",
+          files: [
+            {
+              key: "bp",
+              label: "BridgerPay Report",
+              hint: "Col H: processingId · Col Q: status · Col I: amount",
+              required: true,
+              accept: ".xlsx,.xls,.csv",
+            },
+            {
+              key: "nuvei",
+              label: "Nuvei AE Report",
+              hint: "Col Z: processingId · Col Y: authCode · Col H: result",
+              required: true,
+              accept: ".xlsx,.xls,.csv",
+            },
+            {
+              key: "pa",
+              label: "Network Intl PA Report",
+              hint: "Col D: authCode · Col F: MSF · Col G: Fee · Col H: VAT",
+              required: true,
+              accept: ".xlsx,.xls,.csv",
+            },
+          ],
+        },
+        {
+          id: "binancePay",
+          label: "Binance Pay",
+          icon: "🟡",
+          cur: "USDT",
+          files: [],          // multi-file managed via S.bpMultiFiles; list kept empty for generic checks
+          _multiFile: true,   // flag for custom upload path
+        },
+      ];
+
+      // ── STATE ──
+      const S = {
+        activePSP: null,
+        view: "summary",
+        files: {},
+        results: {},
+        dashCur: "consolidated",
+        // Binance Pay multi-file state (each key holds array of {name, file})
+        bpMultiFiles: { orders: [], report: [], wdr: [], bal: [] },
+        bpManualRows: [],
+        bpShots: [],
+      };
+      // PSP brand colours for charts
+      const PSP_COLORS = {
+        paysafe: "#3b82f6",
+        zen: "#f59e0b",
+        trust: "#8b5cf6",
+        payabl: "#14b8a6",
+        dlocal: "#f97316",
+        unlimit: "#ec4899",
+        nuveiEu: "#22c55e",
+        nuveiAe: "#06b6d4",
+        binancePay: "#f0b90b",
+      };
+      let donutChart = null,
+        barChart = null;
+
+      // ── BUILD NAV ──
+      (() => {
+        const nav = document.getElementById("pspList");
+        PSPS.forEach((p) => {
+          const el = document.createElement("div");
+          el.className = "psp-item";
+          el.id = "nav-" + p.id;
+          el.innerHTML = `<span class="psp-icon">${p.icon}</span><span>${p.label}</span><span class="psp-dot"></span>`;
+          el.onclick = () => selectPSP(p.id);
+          nav.appendChild(el);
+        });
+      })();
+
+      // ── NAVIGATION ──
+      function selectPSP(id) {
+        S.activePSP = id;
+        S.view = "psp";
+        // Deactivate overview button
+        document.getElementById("sbOverviewBtn").classList.remove("active");
+        document
+          .querySelectorAll(".psp-item")
+          .forEach((e) => e.classList.remove("active"));
+        document.getElementById("nav-" + id).classList.add("active");
+        const p = PSPS.find((x) => x.id === id);
+        document.getElementById("topTitle").innerHTML =
+          `${p.icon} ${p.label} <span id="topSub">Settlement Analysis</span>`;
+        // Show tab bar with PSP label
+        const tabBar = document.getElementById("mainTabs");
+        const pspTab = document.getElementById("pspTabBtn");
+        tabBar.style.display = "flex";
+        pspTab.textContent = `${p.icon} ${p.label}`;
+        pspTab.classList.add("active");
+        if (S.results[id]) renderPSPDetail(id);
+        else renderUpload(id);
+        document.getElementById("btnExport").style.display = S.results[id]
+          ? "flex"
+          : "none";
+        document.getElementById("btnClear").style.display =
+          S.files[id] || S.results[id] ? "flex" : "none";
+      }
+
+      function showOverview() {
+        S.view = "summary";
+        // Deactivate all PSP nav items
+        document
+          .querySelectorAll(".psp-item")
+          .forEach((e) => e.classList.remove("active"));
+        document.getElementById("sbOverviewBtn").classList.add("active");
+        document.getElementById("topTitle").innerHTML =
+          `📊 Overview <span id="topSub">All PSPs</span>`;
+        document.getElementById("mainTabs").style.display = "none";
+        document.getElementById("btnExport").style.display = "none";
+        document.getElementById("btnClear").style.display = "none";
+        renderSummary();
+      }
+
+      function showView(view, btn) {
+        S.view = view;
+        document
+          .querySelectorAll("#mainTabs .main-tab")
+          .forEach((t) => t.classList.remove("active"));
+        if (btn) btn.classList.add("active");
+        if (view === "psp" && S.activePSP) {
+          if (S.results[S.activePSP]) renderPSPDetail(S.activePSP);
+          else renderUpload(S.activePSP);
+        }
+      }
+
+      // ── FILE HELPERS ──
+      function readXLSX(file, sheet) {
+        return new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = (e) => {
+            try {
+              const wb = XLSX.read(e.target.result, {
+                type: "binary",
+                cellDates: true,
+              });
+              const sn = sheet
+                ? wb.SheetNames.find((s) => s === sheet) || wb.SheetNames[0]
+                : wb.SheetNames[0];
+              res(
+                XLSX.utils.sheet_to_json(wb.Sheets[sn], {
+                  defval: "",
+                  raw: false,
+                }),
+              );
+            } catch (err) {
+              rej(err);
+            }
+          };
+          r.onerror = () => rej(new Error("Read failed"));
+          r.readAsBinaryString(file);
+        });
+      }
+      function readCSV(file) {
+        return new Promise((res, rej) => {
+          Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (r) => res(r.data),
+            error: rej,
+          });
+        });
+      }
+      async function parseFile(file, sheet) {
+        if (!file) return [];
+        const ext = file.name.split(".").pop().toLowerCase();
+        if (["xlsx", "xls"].includes(ext)) return readXLSX(file, sheet);
+        return readCSV(file);
+      }
+      // Raw array-of-arrays reader (used by Binance Pay analyser for column-index logic)
+      function readFileRaw(file) {
+        return new Promise((res, rej) => {
+          const ext = file.name.split(".").pop().toLowerCase();
+          if (["xlsx", "xls"].includes(ext)) {
+            const r = new FileReader();
+            r.onload = (e) => {
+              try {
+                const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                res(XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: false }));
+              } catch (err) { rej(err); }
+            };
+            r.onerror = rej;
+            r.readAsArrayBuffer(file);
+          } else {
+            Papa.parse(file, {
+              skipEmptyLines: true,
+              complete: (r) => res(r.data),
+              error: rej,
+            });
+          }
+        });
+      }
+      const nn = (v) => {
+        if (typeof v === "number") return v;
+        return parseFloat(String(v || 0).replace(/[£$€,\s]/g, "")) || 0;
+      };
+      const fmt = (v, cur) => {
+        const sym = cur === "GBP" ? "£" : cur === "EUR" ? "€" : "$";
+        return (
+          sym +
+          Math.abs(v || 0).toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        );
+      };
+      const fmtd = (v, cur = "USD") => fmt(v, cur);
+      const pct = (v, t) =>
+        t > 0 ? ((Math.abs(v) / t) * 100).toFixed(2) + "%" : "—";
+
+      // ── parseDate / getMonth (from main portal) ──
+      function parseDate(s) {
+        if (!s) return null;
+        const str = String(s).trim();
+        const dmy = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+        if (dmy) return new Date(dmy[3], dmy[2] - 1, dmy[1]);
+        const d = new Date(str);
+        return isNaN(d) ? null : d;
+      }
+      function getMonth(d) {
+        if (!d) return "Unknown";
+        return (
+          d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")
+        );
+      }
+
+      // ── UPLOAD PANE ──
+      function renderUpload(id) {
+        if (id === "binancePay") { renderBinancePayUpload(); return; }
+        const p = PSPS.find((x) => x.id === id),
+          files = S.files[id] || {};
+        let html = `<div class="upload-grid">`;
+        p.files.forEach((f) => {
+          const loaded = !!files[f.key];
+          html += `<div class="upload-zone ${loaded ? "loaded" : ""}" id="uz-${id}-${f.key}"
+      ondragover="dov(event,'${id}','${f.key}')" ondragleave="dol('${id}','${f.key}')" ondrop="dod(event,'${id}','${f.key}')">
+      <input type="file" accept="${f.accept}" onchange="hf('${id}','${f.key}',this.files[0])">
+      <div class="uz-icon">${loaded ? "✅" : "📂"}</div>
+      <div class="uz-title">${f.label}</div>
+      <div class="uz-hint">${f.hint}</div>
+      <span class="badge ${f.required ? "badge-req" : "badge-opt"}">${f.required ? "Required" : "Optional"}</span>
+      ${loaded ? `<div class="uz-name">✓ ${files[f.key].name}</div>` : ""}
+    </div>`;
+        });
+        html += `</div>`;
+
+        // Contextual tool links
+        const toolLinks = {
+          paysafe: {
+            url: "https://tasnuvahaque-bit.github.io/FundedNext-Reconciliation/Paysafe_Invoice_Parser.html",
+            icon: "📄",
+            label: "Paysafe Invoice Parser",
+            hint: "Use this tool to extract invoice data from Paysafe PDFs into the Excel format required above.",
+          },
+          nuveiAe: {
+            url: "https://tasnuvahaque-bit.github.io/FundedNext-Reconciliation/NI_PA_Converter.html",
+            icon: "🏛️",
+            label: "NI PA Report Converter",
+            hint: "Convert the Network International PDF settlement report into the Excel format required for the PA Report above.",
+          },
+          unlimit: {
+            url: "https://tasnuvahaque-bit.github.io/FundedNext-Reconciliation/FundedNext_Report_Compiler.html",
+            icon: "📦",
+            label: "FundedNext Report Compiler",
+            hint: "Use this tool to compile multi-file Unlimit settlement archives into a single structured Excel report.",
+          },
+          dlocal: {
+            url: "https://tasnuvahaque-bit.github.io/FundedNext-Reconciliation/FundedNext_Report_Compiler.html",
+            icon: "📦",
+            label: "FundedNext Report Compiler",
+            hint: "Use this tool to compile dLocal settlement reports into the format expected above.",
+          },
+        };
+        if (toolLinks[id]) {
+          const t = toolLinks[id];
+          html += `<div style="display:flex;align-items:flex-start;gap:14px;background:rgba(123,47,190,.07);border:1px solid rgba(123,47,190,.18);border-radius:var(--r);padding:14px 18px;margin-bottom:20px">
+      <span style="font-size:20px;flex-shrink:0">${t.icon}</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:3px">Need to prepare this file?</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px">${t.hint}</div>
+        <a href="${t.url}" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--accent);color:#fff;border-radius:var(--rs);text-decoration:none;font-size:11px;font-weight:700;transition:opacity .15s"
+          onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+          ${t.icon} Open ${t.label} ↗
+        </a>
+      </div>
+    </div>`;
+        }
+
+        html += `<button class="btn btn-primary" onclick="runAnalysis('${id}')" ${p.files.filter((f) => f.required).every((f) => !!files[f.key]) ? "" : "disabled"} id="runBtn-${id}">⚡ Run Analysis</button>`;
+        document.getElementById("content").innerHTML = html;
+        document.getElementById("btnExport").style.display = "none";
+        document.getElementById("btnClear").style.display = S.files[id]
+          ? "flex"
+          : "none";
+      }
+      function dov(e, id, k) {
+        e.preventDefault();
+        document.getElementById(`uz-${id}-${k}`)?.classList.add("drag");
+      }
+      function dol(id, k) {
+        document.getElementById(`uz-${id}-${k}`)?.classList.remove("drag");
+      }
+      function dod(e, id, k) {
+        e.preventDefault();
+        dol(id, k);
+        const f = e.dataTransfer.files[0];
+        if (f) hf(id, k, f);
+      }
+      function hf(id, k, file) {
+        if (!file) return;
+        if (!S.files[id]) S.files[id] = {};
+        S.files[id][k] = file;
+        renderUpload(id);
+      }
+
+      // ════════════════════════════════════
+      // BINANCE PAY UPLOAD UI
+      // ════════════════════════════════════
+
+      function bpFileChips(key) {
+        return S.bpMultiFiles[key].map((f, i) =>
+          `<div class="bp-file-chip">
+            <span class="bp-file-chip-name">✓ ${f.name}</span>
+            <button class="bp-file-chip-rm" onclick="bpRemoveFile('${key}',${i})" title="Remove">✕</button>
+          </div>`).join("");
+      }
+
+      function renderBinancePayUpload() {
+        const content = document.getElementById("content");
+        const hasOrders = S.bpMultiFiles.orders.length > 0;
+        const hasReport = S.bpMultiFiles.report.length > 0;
+        const hasWdr    = S.bpMultiFiles.wdr.length > 0;
+        const hasBal    = S.bpMultiFiles.bal.length > 0;
+        const canRun    = hasOrders && hasReport;
+
+        content.innerHTML = `
+<div style="display:flex;flex-direction:column;gap:20px;padding-bottom:16px">
+
+  <!-- ORDER RECONCILIATION FILES -->
+  <div class="upload-grid" style="grid-template-columns:1fr 1fr;gap:16px">
+    <div class="upload-zone ${hasOrders ? 'loaded' : ''}">
+      <div class="uz-icon">${hasOrders ? "✅" : "📂"}</div>
+      <div class="uz-title">Order List Files</div>
+      <div class="uz-hint">CSV / XLSX — Tracking ID in col M · add as many as you need</div>
+      <span class="badge badge-req">Required</span>
+      <div class="bp-file-list" id="bp-chip-orders">${bpFileChips("orders")}</div>
+      <label class="bp-add-btn">
+        ➕ Add file(s)
+        <input type="file" accept=".csv,.xlsx,.xls" multiple onchange="bpAddFiles('orders',this)">
+      </label>
+    </div>
+    <div class="upload-zone ${hasReport ? 'loaded' : ''}">
+      <div class="uz-icon">${hasReport ? "✅" : "📂"}</div>
+      <div class="uz-title">Binance Pay Report Files</div>
+      <div class="uz-hint">XLSX / CSV — Merchant Reference in col C · add as many as you need</div>
+      <span class="badge badge-req">Required</span>
+      <div class="bp-file-list" id="bp-chip-report">${bpFileChips("report")}</div>
+      <label class="bp-add-btn">
+        ➕ Add file(s)
+        <input type="file" accept=".csv,.xlsx,.xls" multiple onchange="bpAddFiles('report',this)">
+      </label>
+    </div>
+  </div>
+
+  <!-- WITHDRAWALS & BALANCE FILES -->
+  <div class="upload-grid" style="grid-template-columns:1fr 1fr;gap:16px">
+    <div class="upload-zone ${hasWdr ? 'loaded' : ''}">
+      <div class="uz-icon">${hasWdr ? "✅" : "📂"}</div>
+      <div class="uz-title">Withdrawal Report Files</div>
+      <div class="uz-hint">CSV / XLSX — Transaction ID, Amount, Fee columns</div>
+      <span class="badge badge-opt">Optional</span>
+      <div class="bp-file-list" id="bp-chip-wdr">${bpFileChips("wdr")}</div>
+      <label class="bp-add-btn">
+        ➕ Add file(s)
+        <input type="file" accept=".csv,.xlsx,.xls" multiple onchange="bpAddFiles('wdr',this)">
+      </label>
+    </div>
+    <div class="upload-zone ${hasBal ? 'loaded' : ''}">
+      <div class="uz-icon">${hasBal ? "✅" : "📂"}</div>
+      <div class="uz-title">Balance Report Files</div>
+      <div class="uz-hint">CSV / XLSX — Ending Balance column</div>
+      <span class="badge badge-opt">Optional</span>
+      <div class="bp-file-list" id="bp-chip-bal">${bpFileChips("bal")}</div>
+      <label class="bp-add-btn">
+        ➕ Add file(s)
+        <input type="file" accept=".csv,.xlsx,.xls" multiple onchange="bpAddFiles('bal',this)">
+      </label>
+    </div>
+  </div>
+
+  <!-- MANUAL WITHDRAWAL ROW ENTRY -->
+  <div class="section-hd" style="margin:0">Manual Withdrawal Rows (from Screenshots)</div>
+  <div class="bp-paste-zone" id="bpPasteZone">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">
+      Paste a screenshot or drag an image here to attach it, then enter the row values below.
+    </div>
+    <div contenteditable="true" class="bp-paste-input" id="bpPasteTarget"
+      onpaste="bpOnPaste(event)" onfocus="bpPasteFocus(this)">Click here and paste screenshot…</div>
+    <div class="bp-shots" id="bpShots"></div>
+  </div>
+  <div class="bp-entry-grid">
+    <input class="bp-entry-input" id="bpETxn"  placeholder="Transaction ID">
+    <input class="bp-entry-input" id="bpEDate" placeholder="Date">
+    <input class="bp-entry-input" id="bpECur"  placeholder="Currency (USDT)">
+    <input class="bp-entry-input" id="bpEAmt"  placeholder="Amount" type="number" step="any" min="0">
+    <input class="bp-entry-input" id="bpEFee"  placeholder="Fee" type="number" step="any" min="0">
+    <input class="bp-entry-input" id="bpEAddr" placeholder="Receiver Address">
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="btn-secondary" onclick="bpAddRow()" style="padding:7px 16px;font-size:12px">+ Add Row</button>
+    <span id="bpEntryHint" style="font-size:11px;color:var(--text3)">${S.bpManualRows.length ? S.bpManualRows.length + " manual row(s) queued." : ""}</span>
+  </div>
+
+  <!-- RUN BUTTON -->
+  <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+    <button id="runBtn-binancePay" class="run-btn" onclick="runAnalysis('binancePay')" ${canRun ? "" : "disabled"}>
+      ⚡ Run Analysis
+    </button>
+    <span style="font-size:12px;color:var(--text3)">${canRun ? "Ready — " + S.bpMultiFiles.orders.length + " order file(s) vs " + S.bpMultiFiles.report.length + " Binance report(s)." : "Add at least one Order List and one Binance Pay Report to begin."}</span>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="bp-lightbox" id="bpLightbox" onclick="this.classList.remove('on')">
+  <img id="bpLightboxImg" alt="screenshot">
+</div>`;
+
+        // re-attach paste & drag-drop listeners
+        const pz = document.getElementById("bpPasteZone");
+        if (pz) {
+          pz.addEventListener("dragover", (e) => { e.preventDefault(); pz.classList.add("drag"); });
+          pz.addEventListener("dragleave", () => pz.classList.remove("drag"));
+          pz.addEventListener("drop", (e) => {
+            e.preventDefault(); pz.classList.remove("drag");
+            [...(e.dataTransfer.files || [])].forEach(bpAddShot);
+          });
+        }
+      }
+
+      async function bpAddFiles(key, input) {
+        const files = [...input.files];
+        if (!files.length) return;
+        for (const f of files) {
+          const rows = await readFileRaw(f);
+          const dup = S.bpMultiFiles[key].findIndex(x => x.name === f.name);
+          if (dup >= 0) S.bpMultiFiles[key].splice(dup, 1);
+          S.bpMultiFiles[key].push({ name: f.name, rows });
+        }
+        input.value = "";
+        renderBinancePayUpload();
+      }
+
+      function bpRemoveFile(key, idx) {
+        S.bpMultiFiles[key].splice(idx, 1);
+        renderBinancePayUpload();
+      }
+
+      function bpPasteFocus(el) {
+        if (el.textContent.startsWith("Click here") || el.textContent.startsWith("No image"))
+          el.textContent = "";
+      }
+
+      function bpOnPaste(e) {
+        const items = (e.clipboardData || window.clipboardData).items || [];
+        let found = false;
+        for (const it of items) {
+          if (it.type && it.type.startsWith("image/")) { bpAddShot(it.getAsFile()); found = true; }
+        }
+        e.preventDefault();
+        const t = document.getElementById("bpPasteTarget");
+        if (t) t.textContent = found ? "Screenshot pasted ✓ — paste another or type rows below."
+                                     : "No image on clipboard. Copy a screenshot first.";
+      }
+
+      function bpAddShot(file) {
+        if (!file || !file.type.startsWith("image/")) return;
+        const fr = new FileReader();
+        fr.onload = (e) => {
+          S.bpShots.push({ name: file.name || "pasted.png", url: e.target.result });
+          bpRenderShots();
+        };
+        fr.readAsDataURL(file);
+      }
+
+      function bpRenderShots() {
+        const el = document.getElementById("bpShots");
+        if (!el) return;
+        el.innerHTML = S.bpShots.map((s, i) =>
+          `<div class="bp-shot">
+            <button class="bp-shot-rm" onclick="bpRemoveShot(${i})" title="Remove">✕</button>
+            <img src="${s.url}" data-i="${i}" onclick="bpZoomShot(${i})" alt="${s.name}">
+            <div class="bp-shot-cap" title="${s.name}">${s.name}</div>
+          </div>`).join("");
+      }
+
+      function bpRemoveShot(i) {
+        S.bpShots.splice(i, 1);
+        bpRenderShots();
+      }
+
+      function bpZoomShot(i) {
+        const lb = document.getElementById("bpLightbox");
+        const img = document.getElementById("bpLightboxImg");
+        if (lb && img) { img.src = S.bpShots[i].url; lb.classList.add("on"); }
+      }
+
+      function bpAddRow() {
+        const bpNum = (id) => { const v = document.getElementById(id)?.value; return parseFloat(String(v || 0).replace(/[^0-9.\-]/g, "")) || 0; };
+        const bpStr = (id) => (document.getElementById(id)?.value || "").trim();
+        const txn = bpStr("bpETxn"), amt = bpNum("bpEAmt");
+        if (!txn && !amt) { const h = document.getElementById("bpEntryHint"); if (h) h.textContent = "Enter at least a Transaction ID or an Amount."; return; }
+        S.bpManualRows.push({
+          txn, date: bpStr("bpEDate"), cur: bpStr("bpECur") || "USDT",
+          amount: amt, fee: bpNum("bpEFee"), address: bpStr("bpEAddr"),
+          status: "Successful", auto: "No", source: "Manual entry"
+        });
+        ["bpETxn","bpEDate","bpEAmt","bpEFee","bpEAddr"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+        renderBinancePayUpload();
+      }
+
+      // ════════════════════════════════════
+      // ANALYSERS
+      // ════════════════════════════════════
+
+      async function runAnalysis(id) {
+        const btn = document.getElementById(`runBtn-${id}`);
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "⏳ Analysing…";
+        }
+        try {
+          const files = S.files[id] || {};
+          let result;
+          if (id === "paysafe") result = await aPaysafe(files);
+          else if (id === "zen") result = await aZen(files);
+          else if (id === "trust") result = await aTrust(files);
+          else if (id === "payabl") result = await aPayabl(files);
+          else if (id === "dlocal") result = await aDLocal(files);
+          else if (id === "unlimit") result = await aUnlimit(files);
+          else if (id === "nuveiEu") result = await aNuveiEu(files);
+          else if (id === "nuveiAe") result = await aNuveiAe(files);
+          else if (id === "binancePay") result = await aBinancePay();
+          S.results[id] = result;
+          document.getElementById("nav-" + id).classList.add("done");
+          document.getElementById("btnExport").style.display = "flex";
+          document.getElementById("btnClear").style.display = "flex";
+          renderPSPDetail(id);
+          // If overview is open, refresh it; otherwise just update the chart data store
+          if (S.view === "summary") renderSummary();
+          toast(`✓ ${PSPS.find((p) => p.id === id).label} analysis complete`);
+        } catch (err) {
+          toast("Error: " + (err?.message || String(err)));
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = "⚡ Run Analysis";
+          }
+        }
+      }
+
+      // ── PAYSAFE ──
+      async function aPaysafe(files) {
+        const invRows = await parseFile(files.invoice);
+        const txRows = files.tx ? await parseFile(files.tx) : [];
+        const FEE_TOTAL = "Total Invoice Charge";
+        const FEE_SUBS = [
+          "Transaction Charges",
+          "Interchange",
+          "Scheme Fees",
+          "Account Charges",
+          "Gateway Charge",
+          "Ad Hoc & Adjustment Charges",
+        ];
+        const s = invRows[0] || {};
+        const monthCol =
+          Object.keys(s).find((c) => c.toLowerCase().includes("month")) ||
+          "Month / Year";
+        const procCurCol =
+          Object.keys(s).find((c) => /processing.+currency/i.test(c)) ||
+          "Processing Currency";
+        const netSalesCol =
+          Object.keys(s).find((c) => /net sales value/i.test(c)) ||
+          "Net Sales Value (Converted)";
+        const settleCol =
+          Object.keys(s).find((c) => /settlement amount/i.test(c)) ||
+          "Settlement Amount";
+        const byCur = {};
+        for (const row of invRows) {
+          const cur = (row["Currency"] || "").toString().trim().toUpperCase();
+          if (!cur) continue;
+          const pc = (row[procCurCol] || "").toString().trim().toUpperCase();
+          const ns = nn(row[netSalesCol]),
+            settle = nn(row[settleCol]),
+            fee = Math.abs(nn(row[FEE_TOTAL]));
+          const month = (row[monthCol] || "").toString().trim();
+          if (!byCur[cur])
+            byCur[cur] = {
+              gross: 0,
+              fees: 0,
+              settle: 0,
+              feeBreak: {},
+              procCur: {},
+              months: {},
+            };
+          const c = byCur[cur];
+          c.gross += ns;
+          c.fees += fee;
+          c.settle += settle;
+          FEE_SUBS.forEach((fc) => {
+            c.feeBreak[fc] = (c.feeBreak[fc] || 0) + Math.abs(nn(row[fc]));
+          });
+          if (pc) {
+            if (!c.procCur[pc])
+              c.procCur[pc] = { gross: 0, fees: 0, settle: 0, rows: 0 };
+            c.procCur[pc].gross += ns;
+            c.procCur[pc].fees += fee;
+            c.procCur[pc].settle += settle;
+            c.procCur[pc].rows++;
+          }
+          if (month) {
+            if (!c.months[month])
+              c.months[month] = { gross: 0, fees: 0, settle: 0 };
+            c.months[month].gross += ns;
+            c.months[month].fees += fee;
+            c.months[month].settle += settle;
+          }
+        }
+        const totalGross = Object.values(byCur).reduce(
+          (s, c) => s + c.gross,
+          0,
+        );
+        const totalFees = Object.values(byCur).reduce((s, c) => s + c.fees, 0);
+        const totalSettle = Object.values(byCur).reduce(
+          (s, c) => s + c.settle,
+          0,
+        );
+        return {
+          type: "paysafe",
+          byCur,
+          totalGross,
+          totalFees,
+          totalSettle,
+          net: totalSettle,
+          gross: totalGross,
+          fees: totalFees,
+          cur: "USD",
+        };
+      }
+
+      // ── ZEN ──
+      async function aZen(files) {
+        const st = await parseFile(files.settle);
+        const auth = files.auth ? await parseFile(files.auth) : [];
+        const pur = st.filter((r) => r["transaction_type"] === "Purchase");
+        const ref = st.filter((r) => r["transaction_type"] === "Refund");
+
+        // Gross = sum of transaction_amount for Purchase rows
+        const gross = pur.reduce((s, r) => s + nn(r["transaction_amount"]), 0);
+
+        // transaction_fee IS the total fee (includes IC+ 1%, interchange, card_scheme)
+        // interchange_fee, card_scheme_fee, cashback_fee, authorization_fee are breakdowns
+        const totalFees = pur.reduce((s, r) => s + nn(r["transaction_fee"]), 0);
+
+        // Fee breakdown components (for display only — sum to transaction_fee)
+        const icPlusFee = gross * 0.01; // IC+ = 1% of gross
+        const intFee = pur.reduce((s, r) => s + nn(r["interchange_fee"]), 0);
+        const schFee = pur.reduce((s, r) => s + nn(r["card_scheme_fee"]), 0);
+        const cashFee = pur.reduce((s, r) => s + nn(r["cashback_fee"]), 0);
+        const authFee = pur.reduce((s, r) => s + nn(r["authorization_fee"]), 0);
+
+        // Settlement for purchases: gross − transaction_fee (verified = sum of stl_amount)
+        const purStlAmt = pur.reduce((s, r) => s + nn(r["stl_amount"]), 0);
+        const manualStl = gross - totalFees;
+        const stlMatch = Math.abs(purStlAmt - manualStl) < 1.0;
+
+        // Refunds: stl_amount = transaction_amount + transaction_fee (Zen returns the fee on refunds)
+        // Net refund impact = sum of refund stl_amounts (positive — deducted from purchase settlement)
+        const refStlAmt = ref.reduce((s, r) => s + nn(r["stl_amount"]), 0);
+        const refTxnAmt = ref.reduce(
+          (s, r) => s + nn(r["transaction_amount"]),
+          0,
+        );
+        const refTxnFee = ref.reduce((s, r) => s + nn(r["transaction_fee"]), 0);
+
+        // Net settlement = purchase settlement − refund settlement
+        const netSettlement = purStlAmt - refStlAmt;
+
+        // Breakdown maps — use transaction_fee (total) per row as the fee
+        const cardMap = {},
+          countryMap = {},
+          monthMap = {};
+        pur.forEach((r) => {
+          const card = r["card_organisation"] || "Unknown";
+          const country = r["customer_country"] || "Unknown";
+          const d = new Date(r["stl_date"] || r["created_at"] || "");
+          const month = isNaN(d)
+            ? "?"
+            : d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+          const amt = nn(r["transaction_amount"]);
+          const fee = nn(r["transaction_fee"]); // total fee per row
+          const stl = nn(r["stl_amount"]);
+          if (!cardMap[card])
+            cardMap[card] = { count: 0, amt: 0, fee: 0, stl: 0 };
+          if (!countryMap[country])
+            countryMap[country] = { count: 0, amt: 0, fee: 0, stl: 0 };
+          if (!monthMap[month])
+            monthMap[month] = { count: 0, amt: 0, fee: 0, stl: 0 };
+          cardMap[card].count++;
+          cardMap[card].amt += amt;
+          cardMap[card].fee += fee;
+          cardMap[card].stl += stl;
+          countryMap[country].count++;
+          countryMap[country].amt += amt;
+          countryMap[country].fee += fee;
+          countryMap[country].stl += stl;
+          monthMap[month].count++;
+          monthMap[month].amt += amt;
+          monthMap[month].fee += fee;
+          monthMap[month].stl += stl;
+        });
+
+        const authAcc = auth.filter(
+          (r) =>
+            r["transaction_state"] === "ACCEPTED" &&
+            r["transaction_type"] === "Purchase",
+        ).length;
+        const authTotal = auth.filter(
+          (r) => r["transaction_type"] === "Purchase",
+        ).length;
+
+        return {
+          type: "zen",
+          gross, // sum of transaction_amount (Purchase)
+          fees: totalFees, // sum of transaction_fee (Purchase) — the total fee
+          totalFees,
+          net: netSettlement, // purStlAmt − refStlAmt
+          purStlAmt,
+          refStlAmt,
+          manualStl,
+          stlMatch, // verification: gross − fees == purStlAmt
+          // Fee breakdown (components that make up transaction_fee)
+          icPlusFee,
+          intFee,
+          schFee,
+          cashFee,
+          authFee,
+          // Refund detail
+          refTxnAmt,
+          refTxnFee,
+          refAmt: refStlAmt, // net refund deduction
+          count: pur.length,
+          refCount: ref.length,
+          authAcc,
+          authTotal,
+          authRate: authTotal > 0 ? (authAcc / authTotal) * 100 : null,
+          cardMap,
+          countryMap,
+          monthMap,
+          cur: "USD",
+        };
+      }
+
+      // ── TRUSTPAYMENTS ──
+      async function aTrust(files) {
+        const rows = await parseFile(files.tx);
+        const toN = (v) => {
+          if (typeof v === "number") return v;
+          return parseFloat(String(v || 0).replace(/[£$€,\s]/g, "")) || 0;
+        };
+        const pur = rows.filter(
+          (r) =>
+            (r["Transaction Type"] || "").toLowerCase().trim() === "purchase" &&
+            (r["Status"] || "").toLowerCase().trim() === "cleared",
+        );
+        const ref = rows.filter(
+          (r) =>
+            (r["Transaction Type"] || "").toLowerCase().includes("refund") &&
+            (r["Status"] || "").toLowerCase().trim() === "cleared",
+        );
+        const gross = pur.reduce((s, r) => s + toN(r["Transaction Amount"]), 0);
+        const net = pur.reduce(
+          (s, r) => s + toN(r["Transaction Net Amount"]),
+          0,
+        );
+        const intFee = pur.reduce(
+          (s, r) => s + Math.abs(toN(r["Interchange Fee"])),
+          0,
+        );
+        const schFee = pur.reduce(
+          (s, r) => s + Math.abs(toN(r["Card Scheme Assessment Fee"])),
+          0,
+        );
+        const payFee = pur.reduce(
+          (s, r) => s + Math.abs(toN(r["Payment Transaction Fee"])),
+          0,
+        );
+        const totalFees = intFee + schFee + payFee;
+        const refAmt = ref.reduce(
+          (s, r) => s + toN(r["Transaction Amount"]),
+          0,
+        );
+        const schemeMap = {},
+          regionMap = {},
+          countryMap = {};
+        pur.forEach((r) => {
+          const amt = toN(r["Transaction Amount"]),
+            n2 = toN(r["Transaction Net Amount"]),
+            fee =
+              Math.abs(toN(r["Interchange Fee"])) +
+              Math.abs(toN(r["Card Scheme Assessment Fee"])) +
+              Math.abs(toN(r["Payment Transaction Fee"]));
+          [
+            ["Card Scheme", schemeMap],
+            ["Region", regionMap],
+            ["Transaction Country", countryMap],
+          ].forEach(([col, map]) => {
+            const k = r[col] || "Unknown";
+            if (!map[k]) map[k] = { count: 0, amt: 0, fee: 0, net: 0 };
+            map[k].count++;
+            map[k].amt += amt;
+            map[k].fee += fee;
+            map[k].net += n2;
+          });
+        });
+        return {
+          type: "trust",
+          gross,
+          net,
+          fees: totalFees,
+          totalFees,
+          intFee,
+          schFee,
+          payFee,
+          refAmt,
+          count: pur.length,
+          refCount: ref.length,
+          schemeMap,
+          regionMap,
+          countryMap,
+          cur: "USD",
+        };
+      }
+
+      // ── PAYABL (exact same logic as main portal) ──
+      async function aPayabl(files) {
+        const txRows = await parseFile(files.tx);
+        const breakRows = files.break ? await parseFile(files.break) : [];
+        const n = (v) => parseFloat(v) || 0;
+        txRows.forEach((r) => (r._date = parseDate(r["Date"] || r["date"])));
+        breakRows.forEach(
+          (r) =>
+            (r._date = parseDate(r["Post Date"] || r["date"] || r["Date"])),
+        );
+        // Captures from TX report
+        const captures = txRows.filter(
+          (r) =>
+            (r["Tx-Type"] || "").trim() === "Capture" &&
+            (r["Status"] || "").trim() === "Successful",
+        );
+        const capByMonth = {};
+        captures.forEach((r) => {
+          const m = getMonth(r._date);
+          if (!capByMonth[m]) capByMonth[m] = { count: 0, volume: 0 };
+          capByMonth[m].count++;
+          capByMonth[m].volume += n(r["Amount"]);
+        });
+        // Fees from TX Breakdown
+        const bCaptures = breakRows.filter(
+          (r) =>
+            (r["Tx-Type"] || r["tx-type"] || "").trim() === "Capture" &&
+            (r["Status"] || "").trim() === "Successful",
+        );
+        const feeCols = [
+          "Interchange fee",
+          "Scheme Fee",
+          "Acquirer fee",
+          "Auth Fee",
+          "3DS Fee",
+          "ApplePay Fee",
+          "GooglePay Fee",
+        ];
+        const fees = {};
+        feeCols.forEach((f) => {
+          fees[f] = bCaptures.reduce((s, r) => s + n(r[f]), 0);
+        });
+        const totalFees = Object.values(fees).reduce((a, b) => a + b, 0);
+        const grossTotal = bCaptures.reduce(
+          (s, r) => s + n(r["Gross Amount"]),
+          0,
+        );
+        const netTotal = bCaptures.reduce((s, r) => s + n(r["Net Amount"]), 0);
+        const feeByMonth = {};
+        bCaptures.forEach((r) => {
+          const m = getMonth(r._date);
+          if (!feeByMonth[m]) feeByMonth[m] = { gross: 0, net: 0, fees: 0 };
+          feeByMonth[m].gross += n(r["Gross Amount"]);
+          feeByMonth[m].net += n(r["Net Amount"]);
+          feeByMonth[m].fees += feeCols.reduce((s, f) => s + n(r[f]), 0);
+        });
+        // Refunds & chargebacks
+        const refunds = breakRows.filter(
+          (r) => (r["Tx-Type"] || "").trim() === "Refund",
+        );
+        const chargebacks = breakRows.filter(
+          (r) => (r["Tx-Type"] || "").trim() === "Chargeback",
+        );
+        const refByMonth = {},
+          cbByMonth = {};
+        refunds.forEach((r) => {
+          const m = getMonth(r._date);
+          if (!refByMonth[m]) refByMonth[m] = { count: 0, amount: 0 };
+          refByMonth[m].count++;
+          refByMonth[m].amount += Math.abs(n(r["Trans Amount"]));
+        });
+        chargebacks.forEach((r) => {
+          const m = getMonth(r._date);
+          if (!cbByMonth[m]) cbByMonth[m] = { count: 0, amount: 0 };
+          cbByMonth[m].count++;
+          cbByMonth[m].amount += Math.abs(n(r["Trans Amount"]));
+        });
+        // Auth rate
+        const auths = txRows.filter(
+          (r) => (r["Tx-Type"] || "").trim() === "Authorisation",
+        );
+        const authByMonth = {};
+        auths.forEach((r) => {
+          const m = getMonth(r._date);
+          if (!authByMonth[m]) authByMonth[m] = { total: 0, success: 0 };
+          authByMonth[m].total++;
+        });
+        captures.forEach((r) => {
+          const m = getMonth(r._date);
+          if (!authByMonth[m]) authByMonth[m] = { total: 0, success: 0 };
+          authByMonth[m].success++;
+        });
+        // Brand map
+        const brandMap = {};
+        bCaptures.forEach((r) => {
+          const b = r["Credit Card Brand"] || "Unknown";
+          if (!brandMap[b]) brandMap[b] = { count: 0, volume: 0 };
+          brandMap[b].count++;
+          brandMap[b].volume += n(r["Gross Amount"]);
+        });
+        // Region map
+        const regionMap = {};
+        bCaptures.forEach((r) => {
+          const reg = r["Bin Region"] || "Unknown";
+          if (!regionMap[reg]) regionMap[reg] = { count: 0, volume: 0 };
+          regionMap[reg].count++;
+          regionMap[reg].volume += n(r["Gross Amount"]);
+        });
+        // MIDs
+        const midList = [
+          ...new Set(
+            breakRows.map((r) => String(r["MID"] || "").trim()).filter(Boolean),
+          ),
+        ].sort();
+        const midMap = {};
+        bCaptures.forEach((r) => {
+          const mid = String(r["MID"] || "").trim();
+          if (!mid) return;
+          if (!midMap[mid])
+            midMap[mid] = { count: 0, gross: 0, net: 0, fees: 0 };
+          midMap[mid].count++;
+          midMap[mid].gross += n(r["Gross Amount"]);
+          midMap[mid].net += n(r["Net Amount"]);
+          midMap[mid].fees += feeCols.reduce((s, f) => s + n(r[f]), 0);
+        });
+        const months = [
+          ...new Set([...Object.keys(capByMonth), ...Object.keys(feeByMonth)]),
+        ].sort();
+        const feeBreakObj = Object.fromEntries(
+          feeCols.map((f) => [f, Math.abs(fees[f] || 0)]),
+        );
+        return {
+          type: "payabl",
+          gross: grossTotal || captures.reduce((s, r) => s + n(r["Amount"]), 0),
+          net: netTotal,
+          fees: Math.abs(totalFees),
+          totalFees: Math.abs(totalFees),
+          grossTotal,
+          netTotal,
+          feeCols,
+          feeBreakObj,
+          captures,
+          capByMonth,
+          feeByMonth,
+          refByMonth,
+          cbByMonth,
+          authTotal: auths.length,
+          authSuccess: captures.length,
+          authRate: auths.length ? (captures.length / auths.length) * 100 : 0,
+          authByMonth,
+          brandMap,
+          regionMap,
+          midList,
+          midMap,
+          months,
+          refTotal: refunds.reduce(
+            (s, r) => s + Math.abs(n(r["Trans Amount"])),
+            0,
+          ),
+          refCount: refunds.length,
+          cbTotal: chargebacks.reduce(
+            (s, r) => s + Math.abs(n(r["Trans Amount"])),
+            0,
+          ),
+          cbCount: chargebacks.length,
+          cur: "USD",
+        };
+      }
+
+      // ── DLOCAL ──
+      async function aDLocal(files) {
+        const rows = await parseFile(files.settle);
+        let gross = 0,
+          fees = 0,
+          net = 0;
+        const header = rows.find((r) => r["ROW_TYPE"] === "HEADER");
+        if (header) {
+          gross = Math.abs(nn(header["GROSS_TOTAL_AMOUNT"]));
+          fees = Math.abs(nn(header["FEE_TOTAL_AMOUNT"]));
+          net = nn(header["NET_TOTAL_AMOUNT"]);
+        } else {
+          gross = rows.reduce(
+            (s, r) =>
+              s +
+              Math.abs(
+                nn(r["amount"] || r["Amount"] || r["GROSS_AMOUNT"] || 0),
+              ),
+            0,
+          );
+        }
+        return {
+          type: "dlocal",
+          gross,
+          fees,
+          net: net || gross - fees,
+          cur: "USD",
+        };
+      }
+
+      // ── UNLIMIT ──
+      async function aUnlimit(files) {
+        const st = await parseFile(files.settle, "Breakdown (All)");
+        const pur = st.filter((r) => {
+          const t = (r["Tx Type"] || r["Type"] || "").toLowerCase();
+          return t.includes("purchase") || t.includes("sale");
+        });
+        const ref = st.filter((r) =>
+          (r["Tx Type"] || r["Type"] || "").toLowerCase().includes("refund"),
+        );
+        const gross = pur.reduce(
+          (s, r) =>
+            s + Math.abs(nn(r["Amount"] || r["Tx Amount"] || r["amount"] || 0)),
+          0,
+        );
+        const fees = pur.reduce(
+          (s, r) =>
+            s + Math.abs(nn(r["MSF Amount"] || r["Fee"] || r["fee"] || 0)),
+          0,
+        );
+        const net = pur.reduce(
+          (s, r) => s + nn(r["Net Amount"] || r["net_amount"] || 0),
+          0,
+        );
+        const refAmt = ref.reduce(
+          (s, r) => s + Math.abs(nn(r["Amount"] || 0)),
+          0,
+        );
+        return {
+          type: "unlimit",
+          gross,
+          fees,
+          net: net || gross - fees,
+          refAmt,
+          count: pur.length,
+          refCount: ref.length,
+          cur: "USD",
+        };
+      }
+
+      // ── NUVEI EU (exact logic from main portal — movement sheet + optional transaction-search) ──
+      async function aNuveiEu(files) {
+        const rows = await parseFile(files.settle, "movement");
+        const txRows = files.tx
+          ? await parseFile(files.tx, "transaction-search")
+          : [];
+        const n = (v) => parseFloat(v) || 0;
+        const FEE_COLS = [
+          "Discount Fee",
+          "Transaction Fee",
+          "Service Fee",
+          "Reserve",
+          "VAT on Fees",
+          "Plus Commission",
+        ];
+
+        const sales = rows.filter(
+          (r) => (r["Movement Type"] || "").trim() === "Sales",
+        );
+        const chargebacks = rows.filter(
+          (r) => (r["Movement Type"] || "").trim() === "ChargeBack",
+        );
+        const credits = rows.filter(
+          (r) => (r["Movement Type"] || "").trim() === "Credits",
+        );
+        const declined = rows.filter(
+          (r) => (r["Movement Type"] || "").trim() === "Declined",
+        );
+        const auth3d = rows.filter(
+          (r) => (r["Movement Type"] || "").trim() === "Auth3D",
+        );
+        const prechargeback = rows.filter(
+          (r) =>
+            (r["Movement Type"] || "").trim() === "Pre-chargeback notification",
+        );
+        const services = rows.filter(
+          (r) => (r["Movement Type"] || "").trim() === "Services",
+        );
+
+        const grossAmount = sales.reduce((s, r) => s + n(r["Amount"]), 0);
+
+        const FEE_TYPES = [
+          { label: "Sales", rows: sales },
+          { label: "Declined", rows: declined },
+          { label: "Auth3D", rows: auth3d },
+          { label: "ChargeBack", rows: chargebacks },
+          { label: "Credits", rows: credits },
+          { label: "Pre-chargeback", rows: prechargeback },
+          { label: "Services", rows: services },
+        ];
+        const feeBreakdown = {};
+        FEE_COLS.forEach((col) => {
+          feeBreakdown[col] = 0;
+        });
+        const feeByType = {};
+        FEE_TYPES.forEach(({ label, rows: tr }) => {
+          let typeFeeTotal = 0;
+          FEE_COLS.forEach((col) => {
+            const v = Math.abs(tr.reduce((s, r) => s + n(r[col]), 0));
+            feeBreakdown[col] += v;
+            typeFeeTotal += v;
+          });
+          if (typeFeeTotal > 0) feeByType[label] = typeFeeTotal;
+        });
+        const totalFees = Object.values(feeBreakdown).reduce(
+          (a, b) => a + b,
+          0,
+        );
+        const cbAmount = Math.abs(
+          chargebacks.reduce((s, r) => s + n(r["Amount"]), 0),
+        );
+        const cbNetAmt = Math.abs(
+          chargebacks.reduce((s, r) => s + n(r["Net Amount"]), 0),
+        );
+        const creditsAmt = Math.abs(
+          credits.reduce((s, r) => s + n(r["Amount"]), 0),
+        );
+        const netCalc = grossAmount - totalFees - cbAmount;
+        const netAmtCol = rows.reduce((s, r) => s + n(r["Net Amount"]), 0);
+        const gap = netAmtCol - netCalc;
+
+        const monthMap = {};
+        sales.forEach((r) => {
+          const d = new Date(r["Movement Date"] || "");
+          const m = isNaN(d)
+            ? "Unknown"
+            : d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+          if (!monthMap[m])
+            monthMap[m] = { count: 0, gross: 0, fees: 0, net: 0 };
+          monthMap[m].count++;
+          monthMap[m].gross += n(r["Amount"]);
+          monthMap[m].fees += Math.abs(
+            FEE_COLS.reduce((s, col) => s + n(r[col]), 0),
+          );
+          monthMap[m].net += n(r["Net Amount"]);
+        });
+        const countryMap = {},
+          cardMap = {},
+          methodMap = {};
+        sales.forEach((r) => {
+          const c = r["Country"] || "Unknown",
+            ct = r["Card Type"] || "Unknown",
+            pm = r["Payment Method"] || "Unknown";
+          const amt = n(r["Amount"]),
+            net = n(r["Net Amount"]);
+          if (!countryMap[c]) countryMap[c] = { count: 0, gross: 0, net: 0 };
+          countryMap[c].count++;
+          countryMap[c].gross += amt;
+          countryMap[c].net += net;
+          if (!cardMap[ct]) cardMap[ct] = { count: 0, gross: 0 };
+          cardMap[ct].count++;
+          cardMap[ct].gross += amt;
+          if (!methodMap[pm]) methodMap[pm] = { count: 0, gross: 0 };
+          methodMap[pm].count++;
+          methodMap[pm].gross += amt;
+        });
+
+        return {
+          type: "nuveiEu",
+          rows,
+          sales,
+          chargebacks,
+          credits,
+          declined,
+          auth3d,
+          prechargeback,
+          services,
+          grossAmount,
+          feeBreakdown,
+          feeByType,
+          totalFees,
+          cbAmount,
+          cbNetAmt,
+          creditsAmt,
+          netCalc,
+          netAmtCol,
+          gap,
+          monthMap,
+          countryMap,
+          cardMap,
+          methodMap,
+          txRows,
+          gross: grossAmount,
+          net: netCalc,
+          fees: totalFees,
+          cur: "USD",
+          feeRate: grossAmount > 0 ? (totalFees / grossAmount) * 100 : 0,
+        };
+      }
+
+      // ── NUVEI AE (exact 3-step match logic from main portal) ──
+      async function aNuveiAe(files) {
+        const bpRows = await parseFile(files.bp);
+        const nuveiRows = await parseFile(files.nuvei);
+        const paRows = await parseFile(files.pa);
+
+        const parseAmount = (v) => {
+          if (!v) return 0;
+          const s = String(v)
+            .trim()
+            .replace(/[^0-9.-]/g, "");
+          const p = parseFloat(s);
+          return isNaN(p) ? 0 : p;
+        };
+
+        const bpKeys = Object.keys(bpRows[0] || {});
+        const nuveiKeys = Object.keys(nuveiRows[0] || {});
+        const paKeys = Object.keys(paRows[0] || {});
+
+        const bpColI = bpKeys[8]; // Transaction Amount
+        const bpColQ = bpKeys[16]; // Status
+        const bpColH = bpKeys[7]; // Processing ID
+        const nuveiColH = nuveiKeys[7]; // Transaction Result
+        const nuveiColZ = nuveiKeys[25]; // Processing ID
+        const nuveiColY = nuveiKeys[24]; // Auth Code
+        const paColD = paKeys[3]; // Auth Code
+        const paColF = paKeys[5]; // MSF
+        const paColG = paKeys[6]; // Txn Fee
+        const paColH = paKeys[7]; // VAT
+
+        const nuveiMapByZ = {};
+        nuveiRows.forEach((row) => {
+          const z = String(row[nuveiColZ] || "").trim();
+          if (z) nuveiMapByZ[z] = row;
+        });
+        const paMapByD = {};
+        paRows.forEach((row) => {
+          const d = String(row[paColD] || "").trim();
+          if (d) paMapByD[d] = row;
+        });
+
+        const results = [];
+        let settledCount = 0,
+          unsettledCount = 0;
+
+        bpRows.forEach((row) => {
+          const h = String(row[bpColH] || "").trim();
+          const q = String(row[bpColQ] || "").trim();
+          const txAmt = parseAmount(row[bpColI]);
+
+          if (!h) {
+            unsettledCount++;
+            return;
+          }
+
+          const nuveiMatch = nuveiMapByZ[h];
+          if (!nuveiMatch) {
+            results.push({
+              processingId: h,
+              bpStatus: q,
+              authCode: "N/A",
+              statusMatch: "✗",
+              step1Match: "✗",
+              step2Match: "-",
+              txAmt: txAmt.toFixed(2),
+              msf: "0.00",
+              txnFee: "0.00",
+              vat: "0.00",
+              totalFees: "0.00",
+              netAmount: txAmt.toFixed(2),
+              status: "Unsettled",
+              reason: "Not found in Nuvei",
+            });
+            unsettledCount++;
+            return;
+          }
+          const nuveiResult = String(nuveiMatch[nuveiColH] || "").trim();
+          if (q.toLowerCase() !== nuveiResult.toLowerCase()) {
+            results.push({
+              processingId: h,
+              bpStatus: q,
+              authCode: "N/A",
+              statusMatch: "✗",
+              step1Match: "-",
+              step2Match: "-",
+              txAmt: txAmt.toFixed(2),
+              msf: "0.00",
+              txnFee: "0.00",
+              vat: "0.00",
+              totalFees: "0.00",
+              netAmount: txAmt.toFixed(2),
+              status: "Unsettled",
+              reason: `Status mismatch: BP="${q}" vs Nuvei="${nuveiResult}"`,
+            });
+            unsettledCount++;
+            return;
+          }
+          const y = String(nuveiMatch[nuveiColY] || "").trim();
+          if (!y) {
+            results.push({
+              processingId: h,
+              bpStatus: q,
+              authCode: "N/A",
+              statusMatch: "✓",
+              step1Match: "✓",
+              step2Match: "✗",
+              txAmt: txAmt.toFixed(2),
+              msf: "0.00",
+              txnFee: "0.00",
+              vat: "0.00",
+              totalFees: "0.00",
+              netAmount: txAmt.toFixed(2),
+              status: "Unsettled",
+              reason: "No auth code in Nuvei",
+            });
+            unsettledCount++;
+            return;
+          }
+          const paMatch = paMapByD[y];
+          if (paMatch) {
+            const msf = parseAmount(paMatch[paColF]),
+              txnFee = parseAmount(paMatch[paColG]),
+              vat = parseAmount(paMatch[paColH]);
+            const totalFees = Math.abs(msf) + Math.abs(txnFee) + Math.abs(vat);
+            const netAmount = txAmt - totalFees;
+            results.push({
+              processingId: h,
+              bpStatus: q,
+              authCode: y,
+              statusMatch: "✓",
+              step1Match: "✓",
+              step2Match: "✓",
+              txAmt: txAmt.toFixed(2),
+              msf: msf.toFixed(2),
+              txnFee: txnFee.toFixed(2),
+              vat: vat.toFixed(2),
+              totalFees: totalFees.toFixed(2),
+              netAmount: netAmount.toFixed(2),
+              status: "Settled",
+              reason: "All verifications passed",
+            });
+            settledCount++;
+          } else {
+            results.push({
+              processingId: h,
+              bpStatus: q,
+              authCode: y,
+              statusMatch: "✓",
+              step1Match: "✓",
+              step2Match: "✗",
+              txAmt: txAmt.toFixed(2),
+              msf: "0.00",
+              txnFee: "0.00",
+              vat: "0.00",
+              totalFees: "0.00",
+              netAmount: txAmt.toFixed(2),
+              status: "Unsettled",
+              reason: "Auth code not found in PA",
+            });
+            unsettledCount++;
+          }
+        });
+
+        const settled = results.filter((r) => r.status === "Settled");
+        const totalTxnAmt = settled.reduce(
+          (s, r) => s + parseFloat(r.txAmt),
+          0,
+        );
+        const totalMSF = settled.reduce((s, r) => s + parseFloat(r.msf), 0);
+        const totalTxnFee = settled.reduce(
+          (s, r) => s + parseFloat(r.txnFee),
+          0,
+        );
+        const totalVAT = settled.reduce((s, r) => s + parseFloat(r.vat), 0);
+        const totalFees = settled.reduce(
+          (s, r) => s + parseFloat(r.totalFees),
+          0,
+        );
+        const totalNet = settled.reduce(
+          (s, r) => s + parseFloat(r.netAmount),
+          0,
+        );
+
+        return {
+          type: "nuveiAe",
+          results,
+          settledCount,
+          unsettledCount,
+          totalTransactions: bpRows.length,
+          gross: totalTxnAmt,
+          net: totalNet,
+          fees: totalFees,
+          totalTxnAmt,
+          totalMSF,
+          totalTxnFee,
+          totalVAT,
+          totalFees,
+          totalNet,
+          cur: "USD",
+        };
+      }
+
+      // ── BINANCE PAY ANALYSER ──
+      async function aBinancePay() {
+        // Helper: strip currency symbols / whitespace, parse float
+        const bpNorm = (v) => (v == null ? "" : String(v)).trim();
+        const bpNum  = (v) => { const s = bpNorm(v).replace(/[^0-9.\-]/g,""); const n = parseFloat(s); return isNaN(n) ? 0 : n; };
+        // Header-aware column index with fallback
+        const colIdx = (headerRow, names, fallback) => {
+          const low = headerRow.map(h => bpNorm(h).toLowerCase());
+          for (const n of names) { const i = low.indexOf(n.toLowerCase()); if (i >= 0) return i; }
+          return fallback;
+        };
+
+        // ── ORDER RECONCILIATION ──
+        // Build Merchant Reference set from all Binance Pay report files
+        const refSet = new Set();
+        for (const rf of S.bpMultiFiles.report) {
+          const rHead = rf.rows[0] || [];
+          const refIdx = colIdx(rHead, ["Merchant Reference", "MerchantReference"], 2);
+          for (let i = 1; i < rf.rows.length; i++) {
+            const v = bpNorm(rf.rows[i][refIdx]);
+            if (v) refSet.add(v);
+          }
+        }
+
+        // Iterate order-list files, match Tracking ID against refSet
+        const reconResults = [];
+        for (const of_ of S.bpMultiFiles.orders) {
+          const oHead  = of_.rows[0] || [];
+          const trkIdx = colIdx(oHead, ["Tracking ID","TrackingID"], 12);
+          const idIdx  = colIdx(oHead, ["Order ID","OrderId"], 0);
+          const stIdx  = colIdx(oHead, ["Status"], 20);
+          const gwIdx  = colIdx(oHead, ["Gateway"], 10);
+          const gtIdx  = colIdx(oHead, ["Grand Total","GrandTotal"], 19);
+          const emIdx  = colIdx(oHead, ["Customer Email","Email"], 1);
+          const crIdx  = colIdx(oHead, ["Created At","CreatedAt"], 21);
+          for (let i = 1; i < of_.rows.length; i++) {
+            const row = of_.rows[i];
+            if (!row || row.every(c => bpNorm(c) === "")) continue;
+            const trk = bpNorm(row[trkIdx]);
+            const matched = trk !== "" && refSet.has(trk);
+            reconResults.push({
+              orderId:  bpNorm(row[idIdx]),
+              tracking: trk,
+              recon:    matched ? "Settled" : "No",
+              status:   bpNorm(row[stIdx]),
+              gateway:  bpNorm(row[gwIdx]),
+              total:    bpNorm(row[gtIdx]),
+              email:    bpNorm(row[emIdx]),
+              created:  bpNorm(row[crIdx]),
+              source:   of_.name,
+            });
+          }
+        }
+
+        const totalOrders   = reconResults.length;
+        const settledOrders = reconResults.filter(r => r.recon === "Settled").length;
+        const settledVal    = reconResults.filter(r => r.recon === "Settled").reduce((s, r) => s + bpNum(r.total), 0);
+
+        // ── BALANCE ──
+        let wbBalance = null, latestTs = -1, latestCur = "USDT", balAsOf = "";
+        for (const bf of S.bpMultiFiles.bal) {
+          const h = bf.rows[0] || [];
+          const ebIdx  = colIdx(h, ["Ending Balance","EndingBalance","Balance"], 5);
+          const dtIdx  = colIdx(h, ["Receive Date","Date","Transaction date","Created At"], 0);
+          const curIdx = colIdx(h, ["Currency"], 6);
+          for (let i = 1; i < bf.rows.length; i++) {
+            const row = bf.rows[i];
+            if (!row || row.every(c => bpNorm(c) === "")) continue;
+            const ts = Date.parse(bpNorm(row[dtIdx]));
+            const t = isNaN(ts) ? i : ts;
+            if (t > latestTs) {
+              latestTs  = t;
+              wbBalance = bpNum(row[ebIdx]);
+              latestCur = bpNorm(row[curIdx]) || latestCur;
+              balAsOf   = bpNorm(row[dtIdx]);
+            }
+          }
+        }
+
+        // ── WITHDRAWALS ──
+        const wdrResults = [];
+        for (const wf of S.bpMultiFiles.wdr) {
+          const h      = wf.rows[0] || [];
+          const idIdx  = colIdx(h, ["Transaction ID","TransactionId","Txn ID"], 0);
+          const dtIdx  = colIdx(h, ["Withdrawal Date","Date","Created At"], 1);
+          const curIdx = colIdx(h, ["Balances","Currency","Balance"], 2);
+          const amtIdx = colIdx(h, ["Withdrawal Amount","Amount"], 3);
+          const feeIdx = colIdx(h, ["Withdrawal Fee","Fee"], 4);
+          const adrIdx = colIdx(h, ["Receiver Address/Account","Receiver Address","Address","Account"], 5);
+          const stIdx  = colIdx(h, ["Status"], 6);
+          const autoIdx= colIdx(h, ["Auto Withdraw","Auto Withdrawal"], 7);
+          for (let i = 1; i < wf.rows.length; i++) {
+            const row = wf.rows[i];
+            if (!row || row.every(c => bpNorm(c) === "")) continue;
+            const amt = bpNum(row[amtIdx]), fee = bpNum(row[feeIdx]);
+            wdrResults.push({
+              txn: bpNorm(row[idIdx]), date: bpNorm(row[dtIdx]),
+              cur: bpNorm(row[curIdx]) || latestCur,
+              amount: amt, fee, debited: amt + fee,
+              address: bpNorm(row[adrIdx]),
+              status: bpNorm(row[stIdx]),
+              auto: bpNorm(row[autoIdx]),
+              source: wf.name,
+            });
+          }
+        }
+        // fold in manually-keyed rows
+        for (const m of S.bpManualRows) {
+          wdrResults.push({ ...m, debited: m.amount + m.fee });
+        }
+
+        const totWdrAmt = wdrResults.reduce((s, r) => s + r.amount, 0);
+        const totWdrFee = wdrResults.reduce((s, r) => s + r.fee, 0);
+
+        // ── SUMMARY NUMBERS for Overview compatibility ──
+        // gross  = settled order value
+        // fees   = total withdrawal fees
+        // net    = gross - fees
+        const gross = settledVal;
+        const fees  = totWdrFee;
+        const net   = gross - fees;
+
+        return {
+          type: "binancePay",
+          cur: latestCur || "USDT",
+          gross, net, fees, totalFees: fees,
+          // order recon
+          reconResults, totalOrders, settledOrders,
+          unsettledOrders: totalOrders - settledOrders,
+          settledVal,
+          // withdrawals
+          wdrResults, totWdrAmt, totWdrFee,
+          wdrCount: wdrResults.length,
+          // balance
+          wbBalance, balAsOf, balCur: latestCur || "USDT",
+        };
+      }
+
+      // ════════════════════════════════════
+      // SUMMARY VIEW
+      // ════════════════════════════════════
+      function renderSummary() {
+        const done = PSPS.filter((p) => S.results[p.id]);
+        if (!done.length) {
+          document.getElementById("content").innerHTML =
+            `<div class="empty-pane">
+      <div class="empty-icon">📊</div><div class="empty-title">No data yet</div>
+      <p style="font-size:12px;max-width:280px;line-height:1.6">Run at least one PSP settlement to see the overview.</p>
+    </div>`;
+          return;
+        }
+
+        // Safe numeric getter — handles object fields like Payabl's fee breakdown
+        const safeN = (v) => (typeof v === "number" && isFinite(v) ? v : 0);
+        const getG = (d) =>
+          safeN(d.gross) || safeN(d.grossTotal) || safeN(d.grossAmount) || 0;
+        const getN = (d) =>
+          safeN(d.net) || safeN(d.netTotal) || safeN(d.netCalc) || 0;
+        const getF = (d) =>
+          safeN(d.totalFees) ||
+          (typeof d.fees === "number" ? safeN(d.fees) : 0);
+
+        // Aggregate
+        const byPSP = {};
+        done.forEach((p) => {
+          const d = S.results[p.id];
+          byPSP[p.id] = {
+            label: p.label,
+            icon: p.icon,
+            color: PSP_COLORS[p.id],
+            gross: getG(d),
+            net: getN(d),
+            fees: getF(d),
+            cur: d.cur || "USD",
+            byCur: d.byCur || null,
+          };
+        });
+
+        // All currencies across all PSPs
+        const allGrossByCur = {},
+          allNetByCur = {},
+          allFeesByCur = {};
+        Object.values(byPSP).forEach((p) => {
+          if (p.byCur) {
+            Object.entries(p.byCur).forEach(([c, v]) => {
+              allGrossByCur[c] = (allGrossByCur[c] || 0) + v.gross;
+              allNetByCur[c] = (allNetByCur[c] || 0) + v.settle;
+              allFeesByCur[c] = (allFeesByCur[c] || 0) + v.fees;
+            });
+          } else {
+            const c = p.cur || "USD";
+            allGrossByCur[c] = (allGrossByCur[c] || 0) + p.gross;
+            allNetByCur[c] = (allNetByCur[c] || 0) + p.net;
+            allFeesByCur[c] = (allFeesByCur[c] || 0) + p.fees;
+          }
+        });
+        const dc = S.dashCur;
+        const selCurs =
+          dc === "consolidated"
+            ? Object.keys(allGrossByCur)
+            : dc === "USD"
+              ? ["USD"]
+              : dc === "EUR"
+                ? ["EUR"]
+                : ["GBP"];
+        const totGross = selCurs.reduce(
+          (s, c) => s + (allGrossByCur[c] || 0),
+          0,
+        );
+        const totNet = selCurs.reduce((s, c) => s + (allNetByCur[c] || 0), 0);
+        const totFees = selCurs.reduce((s, c) => s + (allFeesByCur[c] || 0), 0);
+        const feeRate = totGross > 0 ? (totFees / totGross) * 100 : 0;
+        const sym = dc === "GBP" ? "£" : dc === "EUR" ? "€" : "$";
+        const fmtS = (v) =>
+          sym +
+          Math.abs(v || 0).toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+
+        // Trend placeholders (would be vs prev period)
+        const trendHtml = (v, label) =>
+          `<span class="kpi-trend ${v > 0 ? "trend-up" : v < 0 ? "trend-dn" : "trend-flat"}">${v > 0 ? "↑" : "↓"} ${Math.abs(v).toFixed(1)}% ${label}</span>`;
+
+        // Tooltip for gross breakdown
+        const tooltipRows = Object.entries(allGrossByCur)
+          .map(
+            ([c, v]) =>
+              `<div class="tooltip-row"><span style="color:var(--text3)">${c}</span><span style="font-weight:700">${fmt(v, c)}</span></div>`,
+          )
+          .join("");
+
+        // Gross card multi-currency rows
+        const grossCurRows =
+          dc === "consolidated" && Object.keys(allGrossByCur).length > 1
+            ? Object.entries(allGrossByCur)
+                .map(
+                  ([c, v]) =>
+                    `<div class="cur-row"><span class="cur-tag">${c}</span><span style="color:var(--accent2);font-weight:700">${fmt(v, c)}</span></div>`,
+                )
+                .join("")
+            : "";
+        const netCurRows =
+          dc === "consolidated" && Object.keys(allNetByCur).length > 1
+            ? Object.entries(allNetByCur)
+                .map(
+                  ([c, v]) =>
+                    `<div class="cur-row"><span class="cur-tag">${c}</span><span style="color:var(--green);font-weight:700">${fmt(v, c)}</span></div>`,
+                )
+                .join("")
+            : "";
+        const feesCurRows =
+          dc === "consolidated" && Object.keys(allFeesByCur).length > 1
+            ? Object.entries(allFeesByCur)
+                .map(([c, v]) => {
+                  const g = allGrossByCur[c] || 0;
+                  return `<div class="cur-row"><span class="cur-tag">${c}</span><span style="color:var(--fee-color);font-weight:700">${fmt(v, c)} <span style="color:var(--text3);font-size:10px">${g > 0 ? pct(v, g) : ""}</span></span></div>`;
+                })
+                .join("")
+            : "";
+
+        const maxGross = Math.max(
+          ...Object.values(byPSP).map((p) => p.gross),
+          1,
+        );
+
+        let html = `
+  <div class="summary-header">
+    <div class="summary-title">All PSPs · Settlement Overview</div>
+    <div class="cur-toggle">
+      <button class="cur-btn ${dc === "consolidated" ? "active" : ""}" onclick="setDashCur('consolidated')">Consolidated</button>
+      <button class="cur-btn ${dc === "USD" ? "active" : ""}" onclick="setDashCur('USD')">USD</button>
+      <button class="cur-btn ${dc === "EUR" ? "active" : ""}" onclick="setDashCur('EUR')">EUR</button>
+      <button class="cur-btn ${dc === "GBP" ? "active" : ""}" onclick="setDashCur('GBP')">GBP</button>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <!-- GROSS -->
+    <div class="kpi-card c-gross">
+      <div class="kpi-label">Gross Transaction Amount</div>
+      <div class="kpi-main">
+        <div class="kpi-value gross has-tooltip" style="cursor:help">${grossCurRows ? "Multiple Currencies" : fmtS(totGross)}
+          ${grossCurRows ? `<div class="tooltip">${tooltipRows}</div>` : ""}
+        </div>
+        ${trendHtml(3.2, "vs prev")}
+      </div>
+      ${grossCurRows ? `<div class="cur-rows">${grossCurRows}</div>` : `<div class="kpi-sub">${done.length} PSPs · ${totGross > 0 ? fmtS(totGross) : ""}</div>`}
+    </div>
+    <!-- NET -->
+    <div class="kpi-card c-net">
+      <div class="kpi-label">Net Settlement (After Fees)</div>
+      <div class="kpi-main">
+        <div class="kpi-value net">${netCurRows ? "Multiple Currencies" : fmtS(totNet)}</div>
+        ${trendHtml(2.8, "vs prev")}
+      </div>
+      ${netCurRows ? `<div class="cur-rows">${netCurRows}</div>` : `<div class="kpi-sub">After all fees deducted</div>`}
+    </div>
+    <!-- FEES (neutral colour, not red) -->
+    <div class="kpi-card c-fees">
+      <div class="kpi-label">Total Fees Paid</div>
+      <div class="kpi-main">
+        <div class="kpi-value fees">${feesCurRows ? "Multiple Currencies" : fmtS(totFees)}</div>
+        <span class="kpi-trend trend-flat">${feeRate.toFixed(2)}% of gross</span>
+      </div>
+      ${feesCurRows ? `<div class="cur-rows">${feesCurRows}</div>` : `<div class="kpi-sub"><strong>${feeRate.toFixed(2)}%</strong> effective fee rate</div>`}
+    </div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Volume Distribution by PSP</div>
+      <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Gross vs Net vs Fees · per PSP</div>
+      <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- PSP TABLE -->
+  <div class="table-header">
+    <div class="table-title">PSP Settlement Summary</div>
+    <div style="font-size:11px;color:var(--text3)">${done.length} of ${PSPS.length} PSPs completed</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>PSP</th>
+        <th class="r">Gross</th>
+        <th class="r">Net Received</th>
+        <th class="r">Total Fees</th>
+        <th class="r">Fee Rate</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        ${PSPS.filter((p) => S.results[p.id])
+          .map((p) => {
+            const d = S.results[p.id];
+            const safeN2 = (v) =>
+              typeof v === "number" && isFinite(v) ? v : 0;
+            const g =
+              safeN2(d.gross) ||
+              safeN2(d.grossTotal) ||
+              safeN2(d.grossAmount) ||
+              0;
+            const n2 =
+              safeN2(d.net) || safeN2(d.netTotal) || safeN2(d.netCalc) || 0;
+            const f =
+              safeN2(d.totalFees) ||
+              (typeof d.fees === "number" ? safeN2(d.fees) : 0);
+            const barW = Math.round((g / maxGross) * 100);
+
+            const cur = d.cur || "USD";
+            return `<tr>
+            <td><span style="font-size:14px;margin-right:7px">${p.icon}</span><strong>${p.label}</strong></td>
+            <td class="r data-bar-cell">
+              <div class="data-bar-bg" style="width:${barW}%"></div>
+              <span style="color:var(--accent2);font-weight:700;position:relative">${fmt(g, cur)}</span>
+            </td>
+            <td class="r" style="color:var(--green);font-weight:600">${fmt(n2, cur)}</td>
+            <td class="r" style="color:var(--fee-color)">${fmt(f, cur)}</td>
+            <td class="r" style="color:var(--text3)">${pct(f, g)}</td>
+
+            <td></td>
+          </tr>`;
+          })
+          .join("")}
+        ${PSPS.filter((p) => !S.results[p.id])
+          .map(
+            (p) => `
+          <tr class="muted">
+            <td><span style="font-size:14px;margin-right:7px;opacity:.4">${p.icon}</span>${p.label}</td>
+            <td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">—</td>
+            <td><button class="btn btn-run" onclick="selectPSP('${p.id}')">▶ Run</button></td>
+          </tr>`,
+          )
+          .join("")}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- COUNTRY-WISE REVENUE BREAKDOWN -->
+  <div class="table-header" style="margin-top:28px">
+    <div class="table-title">🧾 Country-wise Revenue Breakdown</div>
+  </div>
+  <div class="crb-panel" id="crbRoot"></div>`;
+
+        // Destroy existing charts BEFORE rebuilding HTML (canvas elements get replaced)
+        if (donutChart) {
+          donutChart.destroy();
+          donutChart = null;
+        }
+        if (barChart) {
+          barChart.destroy();
+          barChart = null;
+        }
+        // Safety net: unregister any stale Chart.js instances on these canvas IDs
+        ["donutChart", "barChart"].forEach((id) => {
+          const existing = Chart.getChart(id);
+          if (existing) existing.destroy();
+        });
+
+        document.getElementById("content").innerHTML = html;
+        document.getElementById("btnExport").style.display = "none";
+        document.getElementById("btnClear").style.display = "none";
+
+        setTimeout(drawCharts, 60);
+        renderCRB();
+      }
+
+      function drawCharts() {
+        // Always read fresh from S.results — no stale closure captures
+        const pspsDone = PSPS.filter((p) => S.results[p.id]);
+        if (!pspsDone.length) return;
+
+        // Safe numeric getter — handles cases where a field is an object (e.g. fee breakdown)
+        const safeNum = (v) => (typeof v === "number" && isFinite(v) ? v : 0);
+        const getGross = (d) =>
+          safeNum(d.gross) ||
+          safeNum(d.grossTotal) ||
+          safeNum(d.grossAmount) ||
+          0;
+        const getNet = (d) =>
+          safeNum(d.net) || safeNum(d.netTotal) || safeNum(d.netCalc) || 0;
+        const getFees = (d) =>
+          safeNum(d.totalFees) ||
+          (typeof d.fees === "number" ? safeNum(d.fees) : 0);
+
+        const labels = pspsDone.map((p) => p.label);
+        const grossVals = pspsDone.map(
+          (p) => +getGross(S.results[p.id]).toFixed(2),
+        );
+        const netVals = pspsDone.map(
+          (p) => +getNet(S.results[p.id]).toFixed(2),
+        );
+        const feeVals = pspsDone.map(
+          (p) => +getFees(S.results[p.id]).toFixed(2),
+        );
+        const colors = pspsDone.map((p) => PSP_COLORS[p.id]);
+
+        // Destroy any existing instances first (canvas may have been replaced)
+        ["donutChart", "barChart"].forEach((cid) => {
+          const existing = Chart.getChart(cid);
+          if (existing) existing.destroy();
+        });
+        if (donutChart) {
+          try {
+            donutChart.destroy();
+          } catch (e) {}
+          donutChart = null;
+        }
+        if (barChart) {
+          try {
+            barChart.destroy();
+          } catch (e) {}
+          barChart = null;
+        }
+
+        const dc2 = document.getElementById("donutChart");
+        if (dc2) {
+          donutChart = new Chart(dc2, {
+            type: "doughnut",
+            data: {
+              labels,
+              datasets: [
+                {
+                  data: grossVals,
+                  backgroundColor: colors,
+                  borderColor: "#0d0f14",
+                  borderWidth: 3,
+                  hoverOffset: 6,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: true,
+                  position: "right",
+                  labels: {
+                    color: "#9aa0b4",
+                    font: { size: 11 },
+                    padding: 10,
+                    boxWidth: 12,
+                  },
+                },
+                tooltip: {
+                  callbacks: {
+                    label: (ctx) => {
+                      const t = ctx.parsed || 0;
+                      const tot = grossVals.reduce((a, b) => a + b, 0);
+                      return ` ${ctx.label}: $${t.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${((t / tot) * 100).toFixed(1)}%)`;
+                    },
+                  },
+                },
+              },
+              cutout: "65%",
+            },
+          });
+        }
+
+        const bc = document.getElementById("barChart");
+        if (bc) {
+          barChart = new Chart(bc, {
+            type: "bar",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "Gross",
+                  data: grossVals,
+                  backgroundColor: colors.map((c) => c + "44"),
+                  borderColor: colors,
+                  borderWidth: 1.5,
+                  borderRadius: 3,
+                },
+                {
+                  label: "Net",
+                  data: netVals,
+                  backgroundColor: "rgba(34,197,94,.25)",
+                  borderColor: "rgba(34,197,94,.8)",
+                  borderWidth: 1.5,
+                  borderRadius: 3,
+                },
+                {
+                  label: "Fees",
+                  data: feeVals,
+                  backgroundColor: "rgba(100,116,139,.3)",
+                  borderColor: "rgba(100,116,139,.8)",
+                  borderWidth: 1.5,
+                  borderRadius: 3,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: true,
+                  position: "top",
+                  labels: {
+                    color: "#9aa0b4",
+                    font: { size: 10 },
+                    padding: 12,
+                    boxWidth: 10,
+                  },
+                },
+                tooltip: { mode: "index", intersect: false },
+              },
+              scales: {
+                x: {
+                  grid: { color: "rgba(255,255,255,.04)" },
+                  ticks: { color: "#5c6480", font: { size: 10 } },
+                },
+                y: {
+                  grid: { color: "rgba(255,255,255,.04)" },
+                  ticks: {
+                    color: "#5c6480",
+                    font: { size: 10 },
+                    callback: (v) => "$" + v.toLocaleString(),
+                  },
+                },
+              },
+              interaction: { mode: "index", intersect: false },
+            },
+          });
+        }
+      }
+
+      function setDashCur(cur) {
+        S.dashCur = cur;
+        if (S.view === "summary") renderSummary();
+      }
+
+      // ════════════════════════════════════
+      // COUNTRY-WISE REVENUE BREAKDOWN
+      // ════════════════════════════════════
+      const crbState = {
+        visibleCount: 10,
+        pageStep: 20,
+        currency: "__all__",
+        selectedCountry: null,
+        sortKey: "gross",
+        sortDir: "desc",
+        searchTerm: "",
+      };
+
+      // Common alpha-2 / alias -> canonical country name lookup, used to clean up noisy country
+      // values some PSP exports contain (e.g. a scheme/region prefix glued onto the real code,
+      // like "Solo MA US" where the intended country is the trailing "US" token).
+      const CRB_ISO2_TO_NAME = {
+        US: "United States",
+        UK: "United Kingdom",
+        GB: "United Kingdom",
+        DE: "Germany",
+        FR: "France",
+        ES: "Spain",
+        IT: "Italy",
+        NL: "Netherlands",
+        BE: "Belgium",
+        PT: "Portugal",
+        IE: "Ireland",
+        AT: "Austria",
+        CH: "Switzerland",
+        SE: "Sweden",
+        NO: "Norway",
+        DK: "Denmark",
+        FI: "Finland",
+        PL: "Poland",
+        CZ: "Czech Republic",
+        GR: "Greece",
+        HU: "Hungary",
+        RO: "Romania",
+        BG: "Bulgaria",
+        HR: "Croatia",
+        SK: "Slovakia",
+        SI: "Slovenia",
+        LT: "Lithuania",
+        LV: "Latvia",
+        EE: "Estonia",
+        LU: "Luxembourg",
+        MT: "Malta",
+        CY: "Cyprus",
+        IS: "Iceland",
+        AE: "United Arab Emirates",
+        SA: "Saudi Arabia",
+        QA: "Qatar",
+        KW: "Kuwait",
+        BH: "Bahrain",
+        OM: "Oman",
+        EG: "Egypt",
+        MA: "Morocco",
+        DZ: "Algeria",
+        TN: "Tunisia",
+        JO: "Jordan",
+        LB: "Lebanon",
+        IL: "Israel",
+        TR: "Turkey",
+        ZA: "South Africa",
+        NG: "Nigeria",
+        KE: "Kenya",
+        GH: "Ghana",
+        IN: "India",
+        PK: "Pakistan",
+        BD: "Bangladesh",
+        LK: "Sri Lanka",
+        NP: "Nepal",
+        CN: "China",
+        JP: "Japan",
+        KR: "South Korea",
+        HK: "Hong Kong",
+        TW: "Taiwan",
+        SG: "Singapore",
+        MY: "Malaysia",
+        TH: "Thailand",
+        VN: "Vietnam",
+        ID: "Indonesia",
+        PH: "Philippines",
+        AU: "Australia",
+        NZ: "New Zealand",
+        CA: "Canada",
+        MX: "Mexico",
+        BR: "Brazil",
+        AR: "Argentina",
+        CL: "Chile",
+        CO: "Colombia",
+        PE: "Peru",
+        UY: "Uruguay",
+        PY: "Paraguay",
+        EC: "Ecuador",
+        BO: "Bolivia",
+        VE: "Venezuela",
+        CR: "Costa Rica",
+        PA: "Panama",
+        DO: "Dominican Republic",
+        GT: "Guatemala",
+        RU: "Russia",
+        UA: "Ukraine",
+        KZ: "Kazakhstan",
+        GE: "Georgia",
+        AM: "Armenia",
+        AZ: "Azerbaijan",
+      };
+
+      // Normalize a raw country label. Handles clean 2-letter codes, full names, and noisy
+      // multi-token strings (scheme/region text glued to a country code) by falling back to the
+      // last whitespace-separated token if it resolves to a known code.
+      function crbNormalizeCountry(raw) {
+        if (!raw) return "Unknown";
+        const s = String(raw).trim();
+        if (!s) return "Unknown";
+        const upper = s.toUpperCase();
+        if (CRB_ISO2_TO_NAME[upper]) return CRB_ISO2_TO_NAME[upper];
+        const tokens = s.split(/\s+/).filter(Boolean);
+        if (tokens.length > 1) {
+          const last = tokens[tokens.length - 1].toUpperCase();
+          if (/^[A-Z]{2}$/.test(last) && CRB_ISO2_TO_NAME[last])
+            return CRB_ISO2_TO_NAME[last];
+        }
+        return s;
+      }
+
+      // Only PSPs whose parser tracks a countryMap (Zen, Trustpayments, Nuvei EU today) contribute rows here —
+      // other PSPs in this portal don't capture country-level detail upstream.
+      // Approximate currency->USD rates, used ONLY to weight a country's share of an account's
+      // transaction volume when allocating Paysafe invoice fees across currencies. Because the
+      // invoice's own native fee/gross totals are what get allocated (not re-derived amounts),
+      // any imprecision here affects only the country SPLIT, never the totals — an account's
+      // allocated fees across countries will always sum exactly to its invoice fee.
+      const CRB_FX_TO_USD = {
+        USD: 1,
+        GBP: 1.27,
+        EUR: 1.08,
+        ZAR: 0.055,
+        AUD: 0.66,
+        CAD: 0.74,
+        INR: 0.012,
+        AED: 0.272,
+        SAR: 0.267,
+        NGN: 0.00062,
+        KES: 0.0078,
+        BRL: 0.18,
+        MXN: 0.051,
+        TRY: 0.029,
+        PLN: 0.25,
+        SEK: 0.096,
+        NOK: 0.094,
+        DKK: 0.145,
+        CHF: 1.15,
+        JPY: 0.0067,
+        CNY: 0.139,
+        HKD: 0.128,
+        SGD: 0.74,
+        THB: 0.029,
+        PHP: 0.017,
+        IDR: 0.000062,
+        MYR: 0.22,
+        VND: 0.00004,
+        PKR: 0.0036,
+        BDT: 0.0084,
+        EGP: 0.021,
+        MAD: 0.1,
+        KWD: 3.25,
+        QAR: 0.275,
+        BHD: 2.65,
+        OMR: 2.6,
+        JOD: 1.41,
+        ILS: 0.27,
+        RON: 0.22,
+        CZK: 0.043,
+        HUF: 0.0027,
+        BGN: 0.55,
+        HRK: 0.144,
+        NZD: 0.61,
+        LKR: 0.0034,
+      };
+
+      // ── Paysafe country-fee allocation ──────────────────────────────────────────
+      // The Paysafe invoice report has no country column, but each invoice row carries
+      // "Account ID (True)" which corresponds to "Account ID" in the transaction report.
+      // For every account: gather its transactions, group by Country, weight each country by its
+      // share of the account's transaction volume (converted to USD for cross-currency weighting
+      // only), then allocate that account's invoice fee/gross across countries by that weight.
+      // Because weights always sum to 1, totals per account always tie exactly to the invoice.
+      function paysafeAllocateCountryFees(invoiceRows, txRows) {
+        const countryMap = {};
+        if (!invoiceRows?.length || !txRows?.length) return countryMap;
+
+        const sampleInv = invoiceRows[0] || {};
+        const acctCol =
+          Object.keys(sampleInv).find((c) =>
+            /account\s*id\s*\(true\)/i.test(c),
+          ) || "Account ID (True)";
+        const invCurCol =
+          Object.keys(sampleInv).find((c) => /^currency$/i.test(c)) ||
+          "Currency";
+        const netSalesCol =
+          Object.keys(sampleInv).find((c) => /net sales value/i.test(c)) ||
+          "Net Sales Value (Converted)";
+        const feeTotalCol = "Total Invoice Charge";
+
+        const invByAccount = {}; // key = accountId|currency
+        for (const row of invoiceRows) {
+          const acct = (row[acctCol] || "").toString().trim();
+          if (!acct) continue;
+          const cur =
+            (row[invCurCol] || "").toString().trim().toUpperCase() || "USD";
+          const fee = Math.abs(parseFloat(row[feeTotalCol]) || 0);
+          const gross = parseFloat(row[netSalesCol]) || 0;
+          const key = acct + "|" + cur;
+          if (!invByAccount[key])
+            invByAccount[key] = { acct, cur, fee: 0, gross: 0 };
+          invByAccount[key].fee += fee;
+          invByAccount[key].gross += gross;
+        }
+        if (!Object.keys(invByAccount).length) return countryMap;
+
+        const sampleTx = txRows[0] || {};
+        const txAcctCol =
+          Object.keys(sampleTx).find((c) => /^account\s*id$/i.test(c)) ||
+          "Account ID";
+        const txCountryCol =
+          Object.keys(sampleTx).find((c) => /^country$/i.test(c)) || "Country";
+        const txCurCol =
+          Object.keys(sampleTx).find((c) => /^currency$/i.test(c)) ||
+          "Currency";
+        const txAmtCol =
+          Object.keys(sampleTx).find((c) => /^amount$/i.test(c)) || "Amount";
+
+        const txByAccount = {}; // acct -> { country -> { amtUSD } }
+        for (const row of txRows) {
+          const acct = (row[txAcctCol] || "").toString().trim();
+          if (!acct) continue;
+          const country = crbNormalizeCountry(row[txCountryCol]);
+          const cur = (row[txCurCol] || "USD").toString().trim().toUpperCase();
+          const amt = Math.abs(parseFloat(row[txAmtCol]) || 0);
+          if (!amt) continue;
+          if (!txByAccount[acct]) txByAccount[acct] = {};
+          if (!txByAccount[acct][country])
+            txByAccount[acct][country] = { amtUSD: 0 };
+          txByAccount[acct][country].amtUSD += amt * (CRB_FX_TO_USD[cur] ?? 1);
+        }
+
+        for (const key in invByAccount) {
+          const inv = invByAccount[key];
+          const countries = txByAccount[inv.acct];
+          if (!countries) continue; // no matching transactions for this account — can't allocate
+          const totalUSD = Object.values(countries).reduce(
+            (s, c) => s + c.amtUSD,
+            0,
+          );
+          if (!totalUSD) continue;
+          for (const [country, cdata] of Object.entries(countries)) {
+            const weight = cdata.amtUSD / totalUSD;
+            const allocFee = inv.fee * weight;
+            const allocGross = inv.gross * weight;
+            const allocNet = allocGross - allocFee;
+            if (!countryMap[country])
+              countryMap[country] = {
+                count: 0,
+                amt: 0,
+                fee: 0,
+                net: 0,
+                currency: inv.cur,
+              };
+            countryMap[country].amt += allocGross;
+            countryMap[country].fee += allocFee;
+            countryMap[country].net += allocNet;
+            countryMap[country].count += 1;
+          }
+        }
+        return countryMap;
+      }
+
+      // Generic country-map builder for PSPs whose raw report rows carry a dedicated Country column
+      // (dLocal, Unlimit, Nuvei AE). Auto-detects the country/amount/fee/net columns by name.
+      function crbCountryMapFromRows(rows, opts) {
+        opts = opts || {};
+        if (!rows || !rows.length) return null;
+        const sample = rows[0];
+        const keys = Object.keys(sample);
+        const findCol = (cands) => {
+          for (const c of cands) {
+            const k = keys.find(
+              (kk) => kk.trim().toLowerCase() === c.toLowerCase(),
+            );
+            if (k) return k;
+          }
+          for (const c of cands) {
+            const k = keys.find((kk) =>
+              new RegExp(c.replace(/\s+/g, "\\s*"), "i").test(kk),
+            );
+            if (k) return k;
+          }
+          return null;
+        };
+        const countryCol =
+          opts.countryCol ||
+          findCol([
+            "country",
+            "country code",
+            "customer country",
+            "transaction country",
+          ]);
+        if (!countryCol) return null;
+        const amtCol = findCol(opts.amtCols || ["amount"]);
+        const feeCol = findCol(opts.feeCols || []);
+        const netCol = findCol(opts.netCols || []);
+        if (!amtCol) return null;
+
+        const map = {};
+        rows.forEach((r) => {
+          const rawCountry = r[countryCol];
+          if (!rawCountry) return;
+          const country = crbNormalizeCountry(rawCountry);
+          const amt = Math.abs(parseFloat(r[amtCol]) || 0);
+          if (!amt) return;
+          const fee = feeCol ? Math.abs(parseFloat(r[feeCol]) || 0) : null;
+          const net = netCol ? parseFloat(r[netCol]) || 0 : null;
+          if (!map[country])
+            map[country] = {
+              count: 0,
+              amt: 0,
+              fee: 0,
+              net: 0,
+              hasFee: !!feeCol,
+              hasNet: !!netCol,
+            };
+          map[country].count++;
+          map[country].amt += amt;
+          if (fee !== null) map[country].fee += fee;
+          if (net !== null) map[country].net += net;
+        });
+        return Object.keys(map).length ? map : null;
+      }
+
+      function crbBuildData() {
+        const countries = {};
+        PSPS.forEach((p) => {
+          const d = S.results[p.id];
+          if (!d || !d.countryMap) return;
+          const cur = d.cur || "USD";
+          Object.entries(d.countryMap).forEach(([rawCountry, v]) => {
+            const country = crbNormalizeCountry(rawCountry);
+            const gross = Number(v.amt ?? v.gross ?? 0) || 0;
+            if (!gross) return;
+            let fee, net;
+            if (typeof v.fee === "number") {
+              fee = v.fee;
+              net =
+                typeof v.net === "number"
+                  ? v.net
+                  : typeof v.stl === "number"
+                    ? v.stl
+                    : gross - fee;
+            } else if (typeof v.net === "number") {
+              net = v.net;
+              fee = gross - net;
+            } else {
+              fee = 0;
+              net = gross;
+            }
+            if (!countries[country])
+              countries[country] = { psps: [], currencySet: new Set() };
+            const existing = countries[country].psps.find(
+              (p2) => p2.key === p.id,
+            );
+            if (existing) {
+              existing.gross += gross;
+              existing.fees += fee;
+              existing.net += net;
+            } else {
+              countries[country].psps.push({
+                key: p.id,
+                name: p.label,
+                currency: cur,
+                gross,
+                fees: fee,
+                net,
+              });
+            }
+            countries[country].currencySet.add(cur);
+          });
+        });
+
+        const list = Object.entries(countries).map(([country, c]) => {
+          const totalGross = c.psps.reduce((s, p) => s + p.gross, 0);
+          const totalFees = c.psps.reduce((s, p) => s + p.fees, 0);
+          const totalNet = c.psps.reduce((s, p) => s + p.net, 0);
+          c.psps.forEach((p) => {
+            p.contribPct = totalGross > 0 ? (p.gross / totalGross) * 100 : 0;
+          });
+          return {
+            country,
+            totalGross,
+            totalFees,
+            totalNet,
+            feePct: totalGross > 0 ? (totalFees / totalGross) * 100 : 0,
+            currencies: Array.from(c.currencySet),
+            psps: c.psps,
+          };
+        });
+        list.sort((a, b) => b.totalGross - a.totalGross);
+        list.forEach((c, i) => (c.rank = i + 1));
+        return list;
+      }
+
+      function crbFeeClass(p) {
+        if (p >= 4) return "crb-fee-high";
+        if (p >= 3) return "crb-fee-mid";
+        return "crb-fee-low";
+      }
+
+      function crbApplyCurrencyFilter(list, currency) {
+        if (currency === "__all__") return list;
+        return list
+          .map((c) => {
+            const psps = c.psps.filter((p) => p.currency === currency);
+            if (!psps.length) return null;
+            const totalGross = psps.reduce((s, p) => s + p.gross, 0);
+            const totalFees = psps.reduce((s, p) => s + p.fees, 0);
+            const totalNet = psps.reduce((s, p) => s + p.net, 0);
+            return {
+              ...c,
+              psps,
+              totalGross,
+              totalFees,
+              totalNet,
+              feePct: totalGross > 0 ? (totalFees / totalGross) * 100 : 0,
+              currencies: [currency],
+            };
+          })
+          .filter(Boolean);
+      }
+
+      function crbSort(list, key, dir) {
+        const mul = dir === "asc" ? 1 : -1;
+        return [...list].sort((a, b) => {
+          let av, bv;
+          switch (key) {
+            case "country":
+              av = a.country.toLowerCase();
+              bv = b.country.toLowerCase();
+              return av < bv ? -1 * mul : av > bv ? 1 * mul : 0;
+            case "fees":
+              av = a.totalFees;
+              bv = b.totalFees;
+              break;
+            case "feePct":
+              av = a.feePct;
+              bv = b.feePct;
+              break;
+            case "net":
+              av = a.totalNet;
+              bv = b.totalNet;
+              break;
+            case "rank":
+              av = a.rank;
+              bv = b.rank;
+              return av < bv ? -1 * mul : av > bv ? 1 * mul : 0;
+            default:
+              av = a.totalGross;
+              bv = b.totalGross;
+              break;
+          }
+          return (av - bv) * mul;
+        });
+      }
+
+      function crbRowHtml(c, isSelected, isFirst) {
+        const psps = [...c.psps].sort((a, b) => b.gross - a.gross);
+        const singleCur =
+          c.currencies.length === 1 ? c.currencies[0] : undefined;
+        const spacer = isFirst
+          ? ""
+          : `<tr class="crb-spacer-row"><td colspan="8"></td></tr>`;
+        const country = `<tr class="crb-country-row${isSelected ? " crb-selected" : ""}">
+    <td>${c.rank}</td>
+    <td>${c.country}</td>
+    <td>${fmt(c.totalGross, singleCur)}</td>
+    <td>${fmt(c.totalFees, singleCur)}</td>
+    <td class="${crbFeeClass(c.feePct)}">${c.feePct.toFixed(2)}%</td>
+    <td>${fmt(c.totalNet, singleCur)}</td>
+    <td>${c.currencies.join(", ")}</td>
+    <td></td>
+  </tr>`;
+        const pspRows = psps
+          .map((p, i) => {
+            const glyph = i === psps.length - 1 ? "└──" : "├──";
+            const pFeePct = p.gross > 0 ? (p.fees / p.gross) * 100 : 0;
+            return `<tr class="crb-psp-row">
+      <td></td>
+      <td class="crb-psp-name"><span class="crb-tree-glyph">${glyph}</span>${p.name}</td>
+      <td>${fmt(p.gross, p.currency)}</td>
+      <td>${fmt(p.fees, p.currency)}</td>
+      <td class="${crbFeeClass(pFeePct)}">${pFeePct.toFixed(2)}%</td>
+      <td>${fmt(p.net, p.currency)}</td>
+      <td>${p.currency}</td>
+      <td>${p.contribPct.toFixed(1)}%</td>
+    </tr>`;
+          })
+          .join("");
+        return spacer + country + pspRows;
+      }
+
+      function crbArrow(key) {
+        if (crbState.sortKey !== key) return "";
+        return `<span class="crb-sort-arrow">${crbState.sortDir === "asc" ? "▲" : "▼"}</span>`;
+      }
+
+      function renderCRB() {
+        const root = document.getElementById("crbRoot");
+        if (!root) return;
+
+        const full = crbBuildData();
+        if (!full.length) {
+          root.innerHTML = `<div class="crb-empty">No country-level data yet — run at least one PSP settlement to populate this table.</div>`;
+          return;
+        }
+
+        const currencySet = new Set();
+        full.forEach((c) =>
+          c.currencies.forEach((cur) => currencySet.add(cur)),
+        );
+        const allCurrencies = Array.from(currencySet).sort();
+
+        let filtered = crbApplyCurrencyFilter(full, crbState.currency);
+        filtered = crbSort(filtered, crbState.sortKey, crbState.sortDir);
+
+        let selectedRow = null;
+        if (crbState.selectedCountry)
+          selectedRow =
+            filtered.find((c) => c.country === crbState.selectedCountry) ||
+            null;
+        const restRows = selectedRow
+          ? filtered.filter((c) => c.country !== crbState.selectedCountry)
+          : filtered;
+        const visibleRest = restRows.slice(0, crbState.visibleCount);
+        const displayRows = selectedRow
+          ? [selectedRow, ...visibleRest]
+          : visibleRest;
+
+        const sortedForDropdown = [...full].sort((a, b) =>
+          a.country.localeCompare(b.country),
+        );
+
+        const toolbarHtml = `
+    <div class="crb-toolbar">
+      <div class="crb-toolbar-left">
+        <select class="crb-cur-select" id="crbCountrySelect" onchange="crbOnCountryPick(this.value)">
+          <option value="">🔍 Jump to country…</option>
+          ${sortedForDropdown.map((c) => `<option value="${c.country.replace(/"/g, "&quot;")}" ${crbState.selectedCountry === c.country ? "selected" : ""}>${c.country} (Rank #${c.rank})</option>`).join("")}
+        </select>
+        <select class="crb-cur-select" onchange="crbState.currency=this.value; renderCRB();">
+          <option value="__all__" ${crbState.currency === "__all__" ? "selected" : ""}>All Currencies</option>
+          ${allCurrencies.map((c) => `<option value="${c}" ${crbState.currency === c ? "selected" : ""}>${c}</option>`).join("")}
+        </select>
+        ${crbState.selectedCountry ? `<span class="crb-clear-btn" onclick="crbClearSelection()">✕ Clear ${crbState.selectedCountry}</span>` : ""}
+      </div>
+      <div class="crb-count-label">Showing ${displayRows.length} of ${filtered.length} countries</div>
+    </div>`;
+
+        const tableHtml = `
+    <div class="table-wrap">
+      <table class="crb-table">
+        <thead>
+          <tr>
+            <th class="sortable" onclick="crbSetSort('rank')">Rank ${crbArrow("rank")}</th>
+            <th class="sortable" onclick="crbSetSort('country')">Country ${crbArrow("country")}</th>
+            <th class="sortable" onclick="crbSetSort('gross')">Gross Revenue ${crbArrow("gross")}</th>
+            <th class="sortable" onclick="crbSetSort('fees')">Fees ${crbArrow("fees")}</th>
+            <th class="sortable" onclick="crbSetSort('feePct')">Fee % ${crbArrow("feePct")}</th>
+            <th class="sortable" onclick="crbSetSort('net')">Net Settlement ${crbArrow("net")}</th>
+            <th>Currency</th>
+            <th>% of Country</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${displayRows.map((c, i) => crbRowHtml(c, c.country === crbState.selectedCountry, i === 0)).join("")}
+        </tbody>
+      </table>
+    </div>`;
+
+        const hasMore = restRows.length > visibleRest.length;
+        const footerHtml = `
+    <div class="crb-footer">
+      <span class="crb-count-label">Paysafe fees are allocated per country via Account ID matching against the invoice; other PSPs' fees come directly from their report rows where available.</span>
+      ${hasMore ? `<button class="crb-loadmore-btn" onclick="crbLoadMore()">Load More (+${Math.min(crbState.pageStep, restRows.length - visibleRest.length)})</button>` : ""}
+    </div>`;
+
+        root.innerHTML = toolbarHtml + tableHtml + footerHtml;
+      }
+
+      function crbSetSort(key) {
+        if (crbState.sortKey === key)
+          crbState.sortDir = crbState.sortDir === "asc" ? "desc" : "asc";
+        else {
+          crbState.sortKey = key;
+          crbState.sortDir = key === "country" ? "asc" : "desc";
+        }
+        renderCRB();
+      }
+
+      function crbLoadMore() {
+        crbState.visibleCount += crbState.pageStep;
+        renderCRB();
+      }
+
+      function crbOnCountryPick(country) {
+        crbState.selectedCountry = country || null;
+        renderCRB();
+      }
+
+      function crbSelectCountry(country) {
+        crbState.selectedCountry = country;
+        renderCRB();
+      }
+      function crbClearSelection() {
+        crbState.selectedCountry = null;
+        renderCRB();
+      }
+
+      // ════════════════════════════════════
+      // PSP DETAIL VIEW
+      // ════════════════════════════════════
+      function renderPSPDetail(id) {
+        const d = S.results[id],
+          p = PSPS.find((x) => x.id === id);
+        const content = document.getElementById("content");
+        const f = (v, c) => fmt(v, c || d.cur || "USD");
+        const pc = (v, t) => pct(v, t);
+
+        function pkpi(label, val, sub, cls = "") {
+          return `<div class="pkpi ${cls}"><div class="pkpi-label">${label}</div><div class="pkpi-value">${val}</div>${sub ? `<div class="pkpi-sub">${sub}</div>` : ""}</div>`;
+        }
+        function fbar(label, val, gross, totalF) {
+          return `<div class="fee-rows" style="margin-bottom:0"><div class="fee-item-meta"><span class="fee-item-name">${label}</span><div class="fee-item-right"><span class="fee-item-val">${f(val)}</span><span class="fee-item-pct">${pc(val, gross)} of gross · ${pc(val, totalF)} of fees</span></div></div><div class="fee-bar-bg"><div class="fee-bar-fill" style="width:${totalF > 0 ? Math.min((val / totalF) * 100, 100).toFixed(1) : 0}%"></div></div></div>`;
+        }
+        function brkTable(map, totalAmt, getV) {
+          const entries = Object.entries(map)
+            .sort((a, b) => (getV(b[1]) || 0) - (getV(a[1]) || 0))
+            .slice(0, 20);
+          if (!entries.length)
+            return `<p style="color:var(--text3);font-size:12px;padding:10px">No data</p>`;
+          const total = entries.reduce((s, [, v]) => s + (getV(v) || 0), 0);
+          return `<div class="table-wrap"><table><thead><tr><th>Name</th><th class="r">Txns</th><th class="r">Amount</th><th class="r">% of Total</th></tr></thead><tbody>
+      ${entries.map(([k, v]) => `<tr><td style="font-weight:600">${k}</td><td class="r" style="color:var(--text3)">${(v.count || (v.volume && "-") || 0).toLocaleString()}</td><td class="r" style="color:var(--accent2);font-weight:600">${f(getV(v) || 0)}</td><td class="r" style="color:var(--text3)">${pc(getV(v) || 0, totalAmt || total)}</td></tr>`).join("")}
+      <tr class="tr-total" style="background:var(--surface2);font-weight:700"><td>TOTAL</td><td class="r">${entries.reduce((s, [, v]) => s + (v.count || 0), 0).toLocaleString()}</td><td class="r" style="color:var(--accent2)">${f(total)}</td><td class="r" style="color:var(--text3)">100%</td></tr>
+      </tbody></table></div>`;
+        }
+
+        if (id === "paysafe") {
+          const curs = Object.keys(d.byCur).sort();
+          const FEE_SUBS = [
+            "Transaction Charges",
+            "Interchange",
+            "Scheme Fees",
+            "Account Charges",
+            "Gateway Charge",
+            "Ad Hoc & Adjustment Charges",
+          ];
+          const aggFees = {};
+          FEE_SUBS.forEach((fc) => {
+            aggFees[fc] = curs.reduce(
+              (s, c) => s + (d.byCur[c].feeBreak?.[fc] || 0),
+              0,
+            );
+          });
+          const sym2 = (c) => (c === "GBP" ? "£" : c === "EUR" ? "€" : "$");
+          content.innerHTML = `
+    <div class="psp-kpi-row">
+      ${curs
+        .map((cur) => {
+          const c = d.byCur[cur];
+          return `
+        <div class="pkpi"><div class="pkpi-label">Gross · ${cur}</div><div class="pkpi-value" style="color:var(--accent2)">${sym2(cur) + c.gross.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div class="pkpi-sub">${pc(c.fees, c.gross)} fee rate</div></div>
+        <div class="pkpi"><div class="pkpi-label">Net Settlement · ${cur}</div><div class="pkpi-value" style="color:var(--green)">${sym2(cur) + c.settle.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div></div>
+        <div class="pkpi"><div class="pkpi-label">Fees · ${cur}</div><div class="pkpi-value" style="color:var(--fee-color)">${sym2(cur) + c.fees.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div class="pkpi-sub">${pc(c.fees, c.gross)}</div></div>
+      `;
+        })
+        .join("")}
+    </div>
+    <div class="section-hd">Fee Breakdown</div>
+    <div class="fee-rows" style="margin-bottom:24px">
+      ${FEE_SUBS.filter((fc) => aggFees[fc] > 0)
+        .map((fc) => fbar(fc, aggFees[fc], d.totalGross, d.totalFees))
+        .join("")}
+    </div>
+    <div class="section-hd">By Currency</div>
+    <div class="table-wrap" style="margin-bottom:24px"><table>
+      <thead><tr><th>Currency</th><th class="r">Gross (Net Sales)</th><th class="r">Fees</th><th class="r">Fee %</th><th class="r">Settlement</th></tr></thead>
+      <tbody>${curs
+        .map((cur) => {
+          const c = d.byCur[cur];
+          return `<tr><td style="font-weight:700">${cur}</td><td class="r" style="color:var(--accent2);font-weight:600">${sym2(cur) + c.gross.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td class="r" style="color:var(--fee-color)">${sym2(cur) + c.fees.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td class="r" style="color:var(--text3)">${pc(c.fees, c.gross)}</td><td class="r" style="color:var(--green);font-weight:600">${sym2(cur) + c.settle.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>`;
+        })
+        .join("")}
+      </tbody></table></div>`;
+          return;
+        }
+
+        if (id === "payabl") {
+          const hasFees = d.totalFees > 0;
+          const hasMID = Object.keys(d.midMap || {}).length > 0;
+          content.innerHTML = `
+    <div class="psp-kpi-row">
+      ${pkpi("Gross Revenue", f(d.grossTotal || d.gross), `${d.captures.length.toLocaleString()} successful captures`)}
+      ${pkpi("Net Settlement", `<span style="color:var(--green)">${f(d.netTotal || d.net)}</span>`, "After all fees")}
+      ${pkpi("Total Fees", `<span style="color:var(--fee-color)">${f(d.totalFees)}</span>`, hasFees ? `${pc(d.totalFees, d.grossTotal || d.gross)} effective rate` : "Upload TX Breakdown for fees")}
+      ${pkpi("Chargebacks", `<span style="color:var(--red)">${f(d.cbTotal)}</span>`, `${d.cbCount} transactions`)}
+      ${pkpi("Refunds", f(d.refTotal), `${d.refCount} transactions`)}
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="pt('fees',this)">Fee Breakdown</button>
+      ${hasMID ? `<button class="tab-btn" onclick="pt('mid',this)">By MID</button>` : ""}
+      <button class="tab-btn" onclick="pt('brand',this)">Card Brand</button>
+      <button class="tab-btn" onclick="pt('region',this)">Region</button>
+    </div>
+    <div id="pt-fees" class="tab-pane visible">
+      <div class="fee-rows">
+        ${Object.entries(d.feeBreakObj || {})
+          .filter(([, v]) => Math.abs(v) > 0)
+          .map(([k, v]) =>
+            fbar(k, Math.abs(v), d.grossTotal || d.gross, d.totalFees),
+          )
+          .join("")}
+      </div>
+    </div>
+    ${
+      hasMID
+        ? `<div id="pt-mid" class="tab-pane">
+      <div class="table-wrap"><table><thead><tr><th>MID</th><th class="r">Txns</th><th class="r">Gross</th><th class="r">Net</th><th class="r">Fees</th><th class="r">Fee %</th></tr></thead>
+      <tbody>${Object.entries(d.midMap)
+        .sort((a, b) => b[1].gross - a[1].gross)
+        .map(
+          ([mid, v]) =>
+            `<tr><td style="font-weight:600">${mid}</td><td class="r" style="color:var(--text3)">${v.count.toLocaleString()}</td><td class="r" style="color:var(--accent2);font-weight:600">${f(v.gross)}</td><td class="r" style="color:var(--green)">${f(v.net)}</td><td class="r" style="color:var(--fee-color)">${f(v.fees)}</td><td class="r" style="color:var(--text3)">${pc(v.fees, v.gross)}</td></tr>`,
+        )
+        .join("")}
+      </tbody></table></div>
+    </div>`
+        : ""
+    }
+    <div id="pt-brand" class="tab-pane">${brkTable(d.brandMap, d.grossTotal || d.gross, (v) => v.volume)}</div>
+    <div id="pt-region" class="tab-pane">${brkTable(d.regionMap, d.grossTotal || d.gross, (v) => v.volume)}</div>`;
+          return;
+        }
+
+        if (id === "zen") {
+          const feeRate = d.gross > 0 ? (d.totalFees / d.gross) * 100 : 0;
+          const months = Object.keys(d.monthMap).sort();
+          const p2 = (v) => v.toFixed(2) + "%";
+          content.innerHTML = `
+    <div class="psp-kpi-row">
+      ${pkpi("Gross Transaction Amount", f(d.gross), `${d.count.toLocaleString()} Purchase rows`)}
+      ${pkpi("Total Fees (transaction_fee)", `<span style="color:var(--fee-color)">${f(d.totalFees)}</span>`, `${p2(feeRate)} of gross · IC+ + interchange + scheme`)}
+      ${pkpi("Purchase Settlement", `<span style="color:var(--accent2)">${f(d.purStlAmt)}</span>`, `Gross − fees · ${d.stlMatch ? "✅ Verified" : "⚠️ Check gap"}`)}
+      ${pkpi("Refund Deduction", `<span style="color:var(--red)">-${f(d.refAmt)}</span>`, `${d.refCount} refunds`)}
+      ${pkpi("Net Settlement", `<span style="color:var(--green)">${f(d.net)}</span>`, "Purchase stl − Refund stl")}
+      ${d.authRate !== null ? pkpi("Auth Rate", `<span style="color:var(--green)">${d.authRate.toFixed(1)}%</span>`, `${d.authAcc.toLocaleString()} of ${d.authTotal.toLocaleString()}`) : ""}
+    </div>
+    <div style="background:rgba(123,47,190,.06);border:1px solid rgba(123,47,190,.15);border-radius:var(--r);padding:14px 18px;margin-bottom:20px;font-size:12px">
+      <div style="font-weight:700;color:var(--text2);margin-bottom:8px">Settlement Verification</div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">Gross (Purchase transaction_amount)</span><span style="font-weight:600;color:var(--accent2)">${f(d.gross)}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">Less: Total transaction_fee (IC+ + interchange + scheme)</span><span style="font-weight:600;color:var(--fee-color)">- ${f(d.totalFees)}</span></div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:5px"><span style="color:var(--text3)">Manual Settlement = gross − fees</span><span style="font-weight:700">${f(d.manualStl)}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">Actual stl_amount (Purchase sum)</span><span style="font-weight:700">${f(d.purStlAmt)}</span></div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:5px"><span style="color:var(--text3)">Match</span><span style="font-weight:700;color:${d.stlMatch ? "var(--green)" : "var(--red)"}"> ${d.stlMatch ? "✅ Confirmed — gross − fees = stl_amount" : "⚠️ Gap: " + f(Math.abs(d.purStlAmt - d.manualStl))}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;border-top:1px solid var(--border);padding-top:5px"><span style="color:var(--text3)">Less: Refund stl_amount (txn_amt + txn_fee, ${d.refCount} rows)</span><span style="color:var(--red);font-weight:600">- ${f(d.refAmt)}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="font-weight:700">Net Settlement (Purchase stl − Refund stl)</span><span style="font-weight:700;color:var(--green)">${f(d.net)}</span></div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="zt('summary',this)">Monthly</button>
+      <button class="tab-btn" onclick="zt('fees',this)">Fee Breakdown</button>
+      <button class="tab-btn" onclick="zt('card',this)">Card</button>
+      <button class="tab-btn" onclick="zt('country',this)">Country</button>
+    </div>
+    <div id="zt-summary" class="tab-pane visible">
+      <div class="table-wrap"><table>
+        <thead><tr><th>Month</th><th class="r">Txns</th><th class="r">Gross</th><th class="r">Fees</th><th class="r">Fee %</th><th class="r">Stl Amount</th></tr></thead>
+        <tbody>${months
+          .map((m) => {
+            const v = d.monthMap[m];
+            return `<tr>
+          <td style="font-weight:600">${m}</td>
+          <td class="r dim">${v.count.toLocaleString()}</td>
+          <td class="r" style="color:var(--accent2);font-weight:600">${f(v.amt)}</td>
+          <td class="r" style="color:var(--fee-color)">${f(v.fee)}</td>
+          <td class="r dim">${v.amt > 0 ? p2((v.fee / v.amt) * 100) : "—"}</td>
+          <td class="r" style="color:var(--green);font-weight:600">${f(v.stl)}</td>
+        </tr>`;
+          })
+          .join("")}
+        <tr class="tr-total"><td>TOTAL</td><td class="r">${d.count.toLocaleString()}</td><td class="r" style="color:var(--accent2)">${f(d.gross)}</td><td class="r" style="color:var(--fee-color)">${f(d.totalFees)}</td><td class="r dim">${p2(feeRate)}</td><td class="r" style="color:var(--green)">${f(d.purStlAmt)}</td></tr>
+        </tbody></table></div>
+    </div>
+    <div id="zt-fees" class="tab-pane">
+      <div style="margin-bottom:12px;padding:10px 14px;background:var(--surface2);border-radius:var(--rs);font-size:11px;color:var(--text3)">
+        <strong style="color:var(--text2)">transaction_fee</strong> is the total fee per row.
+        The bars below show its components. IC+ = 1% of gross, plus interchange and scheme fees.
+      </div>
+      <div class="fee-rows">
+        ${fbar("IC+ Fee (1% of gross)", d.icPlusFee, d.gross, d.totalFees)}
+        ${fbar("Interchange Fee", d.intFee, d.gross, d.totalFees)}
+        ${fbar("Card Scheme Fee", d.schFee, d.gross, d.totalFees)}
+        ${d.cashFee > 0 ? fbar("Cashback Fee", d.cashFee, d.gross, d.totalFees) : ""}
+        ${d.authFee > 0 ? fbar("Authorization Fee", d.authFee, d.gross, d.totalFees) : ""}
+      </div>
+      <div style="margin-top:14px;padding:8px 14px;background:var(--surface2);border-radius:var(--rs);font-size:11px;color:var(--text3)">
+        Components (IC+ + int + scheme): ${f(d.icPlusFee + d.intFee + d.schFee)} ·
+        transaction_fee total: ${f(d.totalFees)} ·
+        <span style="color:var(--text2)">Small rounding differences are normal</span>
+      </div>
+    </div>
+    <div id="zt-card"    class="tab-pane">${brkTable(d.cardMap, d.gross, (v) => v.amt)}</div>
+    <div id="zt-country" class="tab-pane">${brkTable(
+      Object.fromEntries(
+        Object.entries(d.countryMap)
+          .sort((a, b) => b[1].amt - a[1].amt)
+          .slice(0, 20),
+      ),
+      d.gross,
+      (v) => v.amt,
+    )}</div>`;
+          return;
+        }
+
+        if (id === "trust") {
+          content.innerHTML = `
+    <div class="psp-kpi-row">
+      ${pkpi("Gross Transaction Amount", f(d.gross), `${d.count.toLocaleString()} cleared purchases`)}
+      ${pkpi("Net Settlement", `<span style="color:var(--green)">${f(d.net)}</span>`, "Transaction Net Amount")}
+      ${pkpi("Total Fees", `<span style="color:var(--fee-color)">${f(d.totalFees)}</span>`, `${pc(d.totalFees, d.gross)} of gross`)}
+      ${pkpi("Refunds", f(d.refAmt), `${d.refCount} transactions`)}
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="tt('fees',this)">Fees</button>
+      <button class="tab-btn" onclick="tt('scheme',this)">Card Scheme</button>
+      <button class="tab-btn" onclick="tt('region',this)">Region</button>
+      <button class="tab-btn" onclick="tt('country',this)">Country</button>
+    </div>
+    <div id="tt-fees" class="tab-pane visible"><div class="fee-rows">
+      ${fbar("Interchange Fee", d.intFee, d.gross, d.totalFees)}
+      ${fbar("Card Scheme Assessment Fee", d.schFee, d.gross, d.totalFees)}
+      ${fbar("Payment Transaction Fee", d.payFee, d.gross, d.totalFees)}
+    </div></div>
+    <div id="tt-scheme"  class="tab-pane">${brkTable(d.schemeMap, d.gross, (v) => v.amt)}</div>
+    <div id="tt-region"  class="tab-pane">${brkTable(d.regionMap, d.gross, (v) => v.amt)}</div>
+    <div id="tt-country" class="tab-pane">${brkTable(
+      Object.fromEntries(
+        Object.entries(d.countryMap)
+          .sort((a, b) => b[1].amt - a[1].amt)
+          .slice(0, 20),
+      ),
+      d.gross,
+      (v) => v.amt,
+    )}</div>`;
+          return;
+        }
+
+        if (id === "nuveiEu") {
+          const d = S.results[id];
+          const fmtE = (v) =>
+            "$" +
+            Math.abs(v || 0).toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            });
+          const pc2 = (v) => v.toFixed(2) + "%";
+          const FEE_COLS = [
+            "Discount Fee",
+            "Transaction Fee",
+            "Service Fee",
+            "Reserve",
+            "VAT on Fees",
+            "Plus Commission",
+          ];
+          const gapColor = (g) =>
+            Math.abs(g) < 0.01
+              ? "var(--green)"
+              : g < 0
+                ? "var(--red)"
+                : "var(--yellow)";
+          const months = Object.keys(d.monthMap).sort();
+          content.innerHTML = `
+    <div class="psp-kpi-row">
+      ${pkpi("Gross Sales Amount", fmtE(d.grossAmount), `${d.sales.length.toLocaleString()} sales transactions`)}
+      ${pkpi("Total Fees", `<span style="color:var(--fee-color)">${fmtE(d.totalFees)}</span>`, `${pc2(d.feeRate)} of gross · all movement types`)}
+      ${pkpi("Net Calculated", `<span style="color:var(--green)">${fmtE(d.netCalc)}</span>`, "Gross − fees − chargebacks")}
+      ${pkpi("Chargebacks", `<span style="color:var(--red)">${fmtE(d.cbAmount)}</span>`, `${d.chargebacks.length} transactions`)}
+      ${pkpi("Net Amount (file)", `<span style="color:var(--green)">${fmtE(d.netAmtCol)}</span>`, "Sum of Net Amount column")}
+      ${pkpi("Gap", `<span style="color:${gapColor(d.gap)}">${Math.abs(d.gap) < 0.01 ? "€0.00" : (d.gap > 0 ? "+" : "-") + fmtE(Math.abs(d.gap))}</span>`, Math.abs(d.gap) < 0.01 ? "No gap" : "File vs Calculated")}
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="_st('neu','summary',this)">Summary</button>
+      <button class="tab-btn" onclick="_st('neu','fees',this)">Fee Breakdown</button>
+      <button class="tab-btn" onclick="_st('neu','country',this)">Country</button>
+      <button class="tab-btn" onclick="_st('neu','card',this)">Card & Method</button>
+      <button class="tab-btn" onclick="_st('neu','cb',this)">Chargebacks</button>
+    </div>
+    <div id="neu-summary" class="tab-pane visible">
+      <div class="section-hd">Settlement Gap Analysis</div>
+      <div class="table-wrap" style="margin-bottom:20px"><table><tbody>
+        <tr><td style="color:var(--text2)">Gross Sales</td><td class="r" style="color:var(--accent2);font-weight:700">${fmtE(d.grossAmount)}</td><td class="r dim">${d.sales.length.toLocaleString()} sales</td></tr>
+        ${FEE_COLS.filter((c) => d.feeBreakdown[c] > 0)
+          .map(
+            (c) =>
+              `<tr><td style="color:var(--text2)">Less: ${c}</td><td class="r" style="color:var(--fee-color)">-${fmtE(d.feeBreakdown[c])}</td><td class="r dim">${d.grossAmount > 0 ? pc2((d.feeBreakdown[c] / d.grossAmount) * 100) : ""}</td></tr>`,
+          )
+          .join("")}
+        <tr><td style="color:var(--text2)">Less: Chargebacks</td><td class="r" style="color:var(--red)">-${fmtE(d.cbAmount)}</td><td class="r dim">${d.chargebacks.length} txns</td></tr>
+        <tr style="background:var(--surface2);font-weight:700"><td>Net Calculated</td><td class="r" style="color:var(--green)">${fmtE(d.netCalc)}</td><td></td></tr>
+        <tr><td style="color:var(--text2)">Net Amount (file)</td><td class="r" style="color:var(--green);font-weight:600">${fmtE(d.netAmtCol)}</td><td></td></tr>
+      </tbody></table></div>
+      <div class="section-hd">Monthly Breakdown</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Month</th><th class="r">Sales</th><th class="r">Gross</th><th class="r">Fees</th><th class="r">Net Amount</th><th class="r">Fee Rate</th></tr></thead>
+        <tbody>${months
+          .map((m) => {
+            const v = d.monthMap[m];
+            return `<tr><td style="font-weight:600">${m}</td><td class="r dim">${v.count.toLocaleString()}</td><td class="r" style="color:var(--accent2);font-weight:600">${fmtE(v.gross)}</td><td class="r" style="color:var(--fee-color)">-${fmtE(v.fees)}</td><td class="r" style="color:var(--green)">${fmtE(v.net)}</td><td class="r dim">${v.gross ? pc2((v.fees / v.gross) * 100) : "—"}</td></tr>`;
+          })
+          .join("")}
+        <tr class="tr-total" style="background:var(--surface2)"><td>TOTAL</td><td class="r">${d.sales.length.toLocaleString()}</td><td class="r" style="color:var(--accent2)">${fmtE(d.grossAmount)}</td><td class="r" style="color:var(--fee-color)">-${fmtE(d.totalFees)}</td><td class="r" style="color:var(--green)">${fmtE(d.netAmtCol)}</td><td class="r dim">${pc2(d.feeRate)}</td></tr>
+        </tbody></table></div>
+    </div>
+    <div id="neu-fees" class="tab-pane">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div><div class="section-hd">By Fee Type</div>
+        <div class="table-wrap"><table><thead><tr><th>Fee</th><th class="r">Amount</th><th class="r">% of Gross</th><th class="r">% of Fees</th></tr></thead>
+        <tbody>${FEE_COLS.filter((c) => d.feeBreakdown[c] > 0)
+          .map(
+            (c) =>
+              `<tr><td>${c}</td><td class="r" style="color:var(--fee-color)">-${fmtE(d.feeBreakdown[c])}</td><td class="r dim">${d.grossAmount > 0 ? pc2((d.feeBreakdown[c] / d.grossAmount) * 100) : "—"}</td><td class="r dim">${d.totalFees > 0 ? pc2((d.feeBreakdown[c] / d.totalFees) * 100) : "—"}</td></tr>`,
+          )
+          .join("")}
+        <tr class="tr-total" style="background:var(--surface2)"><td>TOTAL</td><td class="r" style="color:var(--fee-color)">-${fmtE(d.totalFees)}</td><td class="r dim">${pc2(d.feeRate)}</td><td class="r dim">100%</td></tr>
+        </tbody></table></div></div>
+        <div><div class="section-hd">By Movement Type</div>
+        <div class="table-wrap"><table><thead><tr><th>Type</th><th class="r">Fees</th><th class="r">% of Total</th></tr></thead>
+        <tbody>${Object.entries(d.feeByType)
+          .sort((a, b) => b[1] - a[1])
+          .map(
+            ([t, f]) =>
+              `<tr><td>${t}</td><td class="r" style="color:var(--fee-color)">-${fmtE(f)}</td><td class="r dim">${d.totalFees > 0 ? pc2((f / d.totalFees) * 100) : "—"}</td></tr>`,
+          )
+          .join("")}
+        </tbody></table></div></div>
+      </div>
+    </div>
+    <div id="neu-country" class="tab-pane">${brkTable(d.countryMap, d.grossAmount, (v) => v.gross)}</div>
+    <div id="neu-card" class="tab-pane">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div><div class="section-hd">Card Type</div>${brkTable(d.cardMap, d.grossAmount, (v) => v.gross)}</div>
+        <div><div class="section-hd">Payment Method</div>${brkTable(d.methodMap, d.grossAmount, (v) => v.gross)}</div>
+      </div>
+    </div>
+    <div id="neu-cb" class="tab-pane">
+      <div class="psp-kpi-row">
+        ${pkpi("Chargebacks", `<span style="color:var(--red)">${fmtE(d.cbAmount)}</span>`, `${d.chargebacks.length} transactions`)}
+        ${pkpi("Credits", `<span style="color:var(--yellow)">${fmtE(d.creditsAmt)}</span>`, `${d.credits.length} transactions`)}
+      </div>
+    </div>`;
+          return;
+        }
+
+        if (id === "nuveiAe") {
+          const d = S.results[id];
+          const fmtA = (v) =>
+            "$" +
+            Math.abs(v || 0).toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            });
+          const settled = d.results.filter((r) => r.status === "Settled");
+          const unsettled = d.results.filter((r) => r.status !== "Settled");
+          const buildTable = (rows, title) => {
+            if (!rows.length)
+              return `<div style="padding:20px;text-align:center;color:var(--text3)">No ${title} records</div>`;
+            return `<div class="table-wrap"><table>
+        <thead><tr><th>Processing ID</th><th>BP Status</th><th>Auth Code</th>
+          <th class="r">Txn Amt</th><th class="r">MSF</th><th class="r">Txn Fee</th><th class="r">VAT</th>
+          <th class="r">Total Fees</th><th class="r">Net Settlement</th>
+          <th>Status ✓</th><th>Z Match</th><th>D Match</th><th>Status</th><th>Reason</th>
+        </tr></thead>
+        <tbody>${rows
+          .map(
+            (r) => `<tr>
+          <td style="color:var(--accent2);font-size:10px">${r.processingId}</td>
+          <td style="font-size:11px">${r.bpStatus}</td>
+          <td style="color:var(--text3);font-size:10px">${r.authCode}</td>
+          <td class="r">${fmtA(r.txAmt)}</td>
+          <td class="r" style="color:var(--fee-color)">${fmtA(r.msf)}</td>
+          <td class="r" style="color:var(--fee-color)">${fmtA(r.txnFee)}</td>
+          <td class="r" style="color:var(--fee-color)">${fmtA(r.vat)}</td>
+          <td class="r" style="color:var(--fee-color);font-weight:600">${fmtA(r.totalFees)}</td>
+          <td class="r" style="color:var(--green);font-weight:600">${fmtA(r.netAmount)}</td>
+          <td style="text-align:center;color:${r.statusMatch === "✓" ? "var(--green)" : "var(--red)"}">${r.statusMatch}</td>
+          <td style="text-align:center;color:${r.step1Match === "✓" ? "var(--green)" : r.step1Match === "-" ? "var(--yellow)" : "var(--red)"}">${r.step1Match}</td>
+          <td style="text-align:center;color:${r.step2Match === "✓" ? "var(--green)" : r.step2Match === "-" ? "var(--yellow)" : "var(--red)"}">${r.step2Match}</td>
+          <td><span class="status-badge ${r.status === "Settled" ? "status-ok" : "status-bad"}">${r.status}</span></td>
+          <td style="font-size:10px;color:var(--text3)">${r.reason}</td>
+        </tr>`,
+          )
+          .join("")}</tbody>
+      </table></div>`;
+          };
+          content.innerHTML = `
+    <div style="background:rgba(123,47,190,.07);border:1px solid rgba(123,47,190,.2);border-radius:var(--r);padding:14px 18px;margin-bottom:20px;font-size:11px;color:var(--text2);line-height:1.8">
+      <strong style="color:var(--accent2)">3-Step Matching Process</strong><br>
+      1️⃣ Verify BridgerPay Status (Col Q) = Nuvei Transaction Result (Col H)<br>
+      2️⃣ Match BridgerPay Col H → Nuvei Col Z (Processing ID)<br>
+      3️⃣ Verify Nuvei Col Y (Auth Code) → PA Col D
+    </div>
+    <div class="psp-kpi-row">
+      ${pkpi("Total Transactions", d.totalTransactions.toLocaleString(), `From BridgerPay report`)}
+      ${pkpi("Settled", `<span style="color:var(--green)">${d.settledCount.toLocaleString()}</span>`, `${d.totalTransactions > 0 ? ((d.settledCount / d.totalTransactions) * 100).toFixed(1) + "%" : ""} settlement rate`)}
+      ${pkpi("Unsettled", `<span style="color:var(--red)">${d.unsettledCount.toLocaleString()}</span>`, "Review required")}
+      ${pkpi("Gross (Settled)", fmtA(d.totalTxnAmt), "Settled transactions only")}
+      ${pkpi("Total Fees", `<span style="color:var(--fee-color)">${fmtA(d.totalFees)}</span>`, `${d.totalTxnAmt > 0 ? ((d.totalFees / d.totalTxnAmt) * 100).toFixed(2) + "% · " : ""}MSF: ${fmtA(d.totalMSF)} · Fee: ${fmtA(d.totalTxnFee)} · VAT: ${fmtA(d.totalVAT)}`)}
+      ${pkpi("Net Settlement", `<span style="color:var(--green)">${fmtA(d.totalNet)}</span>`, "After all fees")}
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="_st('nae','settled',this)">✅ Settled (${d.settledCount})</button>
+      <button class="tab-btn" onclick="_st('nae','unsettled',this)">⚠️ Unsettled (${d.unsettledCount})</button>
+      <button class="tab-btn" onclick="_st('nae','all',this)">📋 All (${d.totalTransactions})</button>
+    </div>
+    <div id="nae-settled"   class="tab-pane visible">${buildTable(settled, "settled")}</div>
+    <div id="nae-unsettled" class="tab-pane">${buildTable(unsettled, "unsettled")}</div>
+    <div id="nae-all"       class="tab-pane">${buildTable(d.results, "records")}</div>`;
+          return;
+        }
+
+        if (id === "binancePay") {
+          const fUSDT = (v) => fmt(v, "USD"); // USDT displayed as $
+          const rate = d.totalOrders ? (d.settledOrders / d.totalOrders * 100).toFixed(1) : "0.0";
+          const feeRate = d.totWdrAmt ? (d.totWdrFee / d.totWdrAmt * 100).toFixed(3) : "0.000";
+
+          function bpEsc(s) { return String(s||"").replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+          function buildReconTable(rows) {
+            if (!rows.length) return `<p style="color:var(--text3);font-size:12px;padding:10px">No data</p>`;
+            return `<div class="table-wrap"><table>
+              <thead><tr><th>Order ID</th><th>Tracking ID</th><th>Status</th><th>Gateway</th><th>Grand Total</th><th>Email</th><th>Created At</th><th>Source</th></tr></thead>
+              <tbody>${rows.slice(0,2000).map(r=>{
+                const pill = r.recon==="Settled"
+                  ? `<span class="badge badge-req" style="background:rgba(34,197,94,.12);color:var(--green);border-color:rgba(34,197,94,.3)">SETTLED</span>`
+                  : `<span class="badge badge-opt" style="background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.3)">NO MATCH</span>`;
+                return `<tr><td style="font-weight:600">${bpEsc(r.orderId)}</td><td style="color:var(--accent2)">${bpEsc(r.tracking)}</td><td>${pill}</td><td>${bpEsc(r.gateway)}</td><td style="color:var(--accent2);font-weight:600">${bpEsc(r.total)}</td><td>${bpEsc(r.email)}</td><td>${bpEsc(r.created)}</td><td style="color:var(--text3)">${bpEsc(r.source)}</td></tr>`;
+              }).join("")}
+              ${rows.length>2000?`<tr><td colspan="8" style="text-align:center;color:var(--text3)">Showing first 2,000 of ${rows.length.toLocaleString()} rows — export for full set.</td></tr>`:""}
+              </tbody></table></div>`;
+          }
+
+          function buildWdrTable(rows) {
+            if (!rows.length) return `<p style="color:var(--text3);font-size:12px;padding:10px">No withdrawal data</p>`;
+            return `<div class="table-wrap"><table>
+              <thead><tr><th>Transaction ID</th><th>Date</th><th>Currency</th><th class="r">Amount</th><th class="r">Fee</th><th class="r">Total Debited</th><th>Address</th><th>Status</th><th>Source</th></tr></thead>
+              <tbody>${rows.slice(0,2000).map(r=>{
+                const ok = /success/i.test(r.status);
+                const pill = ok ? `<span class="badge badge-req" style="background:rgba(34,197,94,.12);color:var(--green);border-color:rgba(34,197,94,.3)">${bpEsc(r.status||"OK")}</span>`
+                               : `<span class="badge badge-opt" style="background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.3)">${bpEsc(r.status||"—")}</span>`;
+                return `<tr><td style="color:var(--accent2)">${bpEsc(r.txn)}</td><td>${bpEsc(r.date)}</td><td>${bpEsc(r.cur)}</td><td class="r" style="font-weight:600">${fUSDT(r.amount)}</td><td class="r" style="color:var(--fee-color)">${fUSDT(r.fee)}</td><td class="r" style="color:var(--accent2);font-weight:600">${fUSDT(r.debited)}</td><td>${bpEsc(r.address)}</td><td>${pill}</td><td style="color:var(--text3)">${bpEsc(r.source||"")}</td></tr>`;
+              }).join("")}
+              </tbody></table></div>`;
+          }
+
+          const settled   = (d.reconResults||[]).filter(r=>r.recon==="Settled");
+          const unsettled = (d.reconResults||[]).filter(r=>r.recon!=="Settled");
+
+          content.innerHTML = `
+<div class="psp-kpi-row">
+  ${pkpi("Settled Orders", `<span style="color:var(--green)">${d.settledOrders.toLocaleString()}</span>`, `${rate}% match rate · ${d.totalOrders.toLocaleString()} total`)}
+  ${pkpi("Settled Value", `<span style="color:var(--accent2)">${fUSDT(d.settledVal)}</span>`, "Grand Total of matched orders")}
+  ${pkpi("Total Withdrawals", `<span style="color:var(--fee-color)">${fUSDT(d.totWdrAmt)}</span>`, `${d.wdrCount} withdrawal(s)`)}
+  ${pkpi("Withdrawal Fees", `<span style="color:var(--fee-color)">${fUSDT(d.totWdrFee)}</span>`, `${feeRate}% of withdrawn`)}
+  ${d.wbBalance != null ? pkpi("Current Balance", `<span style="color:var(--green)">${fUSDT(d.wbBalance)}</span>`, `${d.balCur} as of ${bpEsc(d.balAsOf)}`) : ""}
+</div>
+
+<div class="tab-bar" style="margin-bottom:16px">
+  <button class="tab-btn active" onclick="bpt('recon',this)">Order Reconciliation (${d.totalOrders.toLocaleString()})</button>
+  <button class="tab-btn" onclick="bpt('settled',this)">Settled (${d.settledOrders.toLocaleString()})</button>
+  <button class="tab-btn" onclick="bpt('unsettled',this)">No Match (${d.unsettledOrders.toLocaleString()})</button>
+  <button class="tab-btn" onclick="bpt('wdr',this)">Withdrawals (${d.wdrCount.toLocaleString()})</button>
+</div>
+<div id="bpt-recon"     class="tab-pane visible">${buildReconTable(d.reconResults||[])}</div>
+<div id="bpt-settled"   class="tab-pane">${buildReconTable(settled)}</div>
+<div id="bpt-unsettled" class="tab-pane">${buildReconTable(unsettled)}</div>
+<div id="bpt-wdr"       class="tab-pane">${buildWdrTable(d.wdrResults||[])}</div>
+`;
+          return;
+        }
+
+        // Generic fallback (dLocal, Unlimit)
+        const mMap = d.methodMap || {};
+        content.innerHTML = `
+  <div class="psp-kpi-row">
+    ${pkpi("Gross Transaction Amount", f(d.gross), `${d.count || "—"} transactions`)}
+    ${pkpi("Net Settlement", `<span style="color:var(--green)">${f(d.net)}</span>`, "After fees")}
+    ${pkpi("Total Fees", `<span style="color:var(--fee-color)">${f(d.fees)}</span>`, `${pc(d.fees, d.gross)}`)}
+    ${d.refAmt !== undefined ? pkpi("Refunds", f(d.refAmt), `${d.refCount || 0} transactions`) : ""}
+  </div>
+  ${Object.keys(mMap).length ? `<div class="section-hd">Payment Method</div>${brkTable(mMap, d.gross, (v) => v.amt)}` : ""}`;
+      }
+
+      // tab switchers (per-PSP)
+      function pt(tab, btn) {
+        _st("pt", tab, btn);
+      }
+      function zt(tab, btn) {
+        _st("zt", tab, btn);
+      }
+      function tt(tab, btn) {
+        _st("tt", tab, btn);
+      }
+      function _st(prefix, tab, btn) {
+        document
+          .querySelectorAll(`[id^="${prefix}-"]`)
+          .forEach((el) => el.classList.remove("visible"));
+        const t = document.getElementById(`${prefix}-${tab}`);
+        if (t) t.classList.add("visible");
+        const bar = btn?.closest(".tab-bar");
+        if (bar) {
+          bar
+            .querySelectorAll(".tab-btn")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+        }
+      }
+      function bpt(tab, btn) { _st("bpt", tab, btn); }
+
+      // ── CONTROLS ──
+      function clearCurrent() {
+        const id = S.activePSP;
+        if (!id) return;
+        delete S.files[id];
+        delete S.results[id];
+        if (id === "binancePay") {
+          S.bpMultiFiles = { orders: [], report: [], wdr: [], bal: [] };
+          S.bpManualRows = [];
+          S.bpShots = [];
+        }
+        document.getElementById("nav-" + id).classList.remove("done");
+        renderUpload(id);
+        toast(`${PSPS.find((p) => p.id === id)?.label} cleared`);
+      }
+      function exportCurrent() {
+        const id = S.activePSP;
+        const d = S.results[id];
+        if (!d) return;
+        if (id === "binancePay") { bpExportWB(); return; }
+        const wb = XLSX.utils.book_new();
+        const rows = [["Metric", "Value"]];
+        if (d.gross) rows.push(["Gross", d.gross]);
+        if (d.net || d.netTotal) rows.push(["Net", d.net || d.netTotal]);
+        if (d.fees || d.totalFees)
+          rows.push(["Total Fees", d.fees || d.totalFees]);
+        XLSX.utils.book_append_sheet(
+          wb,
+          XLSX.utils.aoa_to_sheet(rows),
+          "Summary",
+        );
+        XLSX.writeFile(wb, `${id}_settlement.xlsx`);
+        toast("Exported ✓");
+      }
+
+      // ── BINANCE PAY EXPORT ──
+      function bpExportWB() {
+        const d = S.results["binancePay"];
+        if (!d) return;
+        const wb = XLSX.utils.book_new();
+
+        // Sheet 1: Summary
+        const sumRows = [
+          ["Metric", "Value"],
+          ["Total Orders", d.totalOrders],
+          ["Settled Orders", d.settledOrders],
+          ["Unmatched Orders", d.unsettledOrders],
+          ["Match Rate %", d.totalOrders ? (d.settledOrders / d.totalOrders * 100).toFixed(2) : "0.00"],
+          ["Settled Value (USDT)", d.settledVal.toFixed(2)],
+          ["Total Withdrawals", d.wdrCount],
+          ["Total Withdrawn (USDT)", d.totWdrAmt.toFixed(2)],
+          ["Total Withdrawal Fees (USDT)", d.totWdrFee.toFixed(2)],
+          ["Current Balance (USDT)", d.wbBalance != null ? d.wbBalance.toFixed(2) : "N/A"],
+          ["Balance As Of", d.balAsOf || "N/A"],
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sumRows), "Summary");
+
+        // Sheet 2: Order Reconciliation
+        if ((d.reconResults || []).length) {
+          const reconHeader = ["Order ID","Tracking ID","Recon Status","Order Status","Gateway","Grand Total","Email","Created At","Source File"];
+          const reconData = [reconHeader, ...(d.reconResults||[]).map(r=>[r.orderId,r.tracking,r.recon,r.status,r.gateway,r.total,r.email,r.created,r.source])];
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(reconData), "Order Reconciliation");
+        }
+
+        // Sheet 3: Withdrawals
+        if ((d.wdrResults || []).length) {
+          const wdrHeader = ["Transaction ID","Date","Currency","Amount","Fee","Total Debited","Receiver Address","Status","Auto Withdraw","Source"];
+          const wdrData = [wdrHeader, ...(d.wdrResults||[]).map(r=>[r.txn,r.date,r.cur,r.amount,r.fee,r.debited,r.address,r.status,r.auto,r.source||""])];
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wdrData), "Withdrawals");
+        }
+
+        XLSX.writeFile(wb, "binancepay_settlement.xlsx");
+        toast("Exported ✓");
+      }
+
+      // ── TOAST ──
+      function toast(msg) {
+        const el = document.getElementById("toast");
+        el.textContent = msg;
+        el.classList.add("show");
+        setTimeout(() => el.classList.remove("show"), 2800);
+      }
+    </script>
+  </body>
+</html>
